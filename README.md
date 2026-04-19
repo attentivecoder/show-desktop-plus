@@ -4,7 +4,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/GNOME-45–50-blue?logo=gnome&logoColor=white" />
   <img src="https://img.shields.io/badge/Tests-100%25-brightgreen?logo=vitest" />
-  <img src="https://img.shields.io/badge/Coverage-71%25-orange?logo=vitest" />
+  <img src="https://img.shields.io/badge/Coverage-73%25-orange?logo=vitest" />
   <img src="https://img.shields.io/github/license/attentivecoder/show-desktop-plus" />
   <img src="https://img.shields.io/badge/version-1-blue" />
 </p>

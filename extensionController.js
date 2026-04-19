@@ -21,10 +21,8 @@ export default class ExtensionController {
     }
 
     async enable() {
-        // Load GNOME UI first
         this._gnomeUI = await loadGnomeUI();
 
-        // Now construct everything that depends on gnomeUI
         this._windowManager = new WindowManager(
             this._stateStore,
             this._extension,
@@ -45,20 +43,17 @@ export default class ExtensionController {
             this._gnomeUI
         );
 
-        // Add UI
+
         this._panelIndicator.addToPanel();
         this._hotkeyManager.enable();
 
-        // Workspace change updates icon
         this._workspaceSignal = global.workspace_manager.connect(
             'active-workspace-changed',
             () => this._panelIndicator.updateIcon()
         );
 
-        // Settings change updates icon
         this._connectSettings();
 
-        // Initial icon update
         this._panelIndicator.updateIcon();
     }
 
