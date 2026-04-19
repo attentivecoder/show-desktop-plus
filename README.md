@@ -4,7 +4,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/GNOME-45–50-blue?logo=gnome&logoColor=white" />
   <img src="https://img.shields.io/badge/Tests-100%25-brightgreen?logo=vitest" />
-  <img src="https://img.shields.io/badge/Coverage-73%25-orange?logo=vitest" />
+  <img src="https://img.shields.io/badge/Coverage-72%25-orange?logo=vitest" />
   <img src="https://img.shields.io/github/license/attentivecoder/show-desktop-plus" />
   <img src="https://img.shields.io/badge/version-1-blue" />
 </p>
@@ -91,6 +91,7 @@ gnome-extensions enable show-desktop-plus@attentivecoder
 ```
 
 ## 🛠️ Development Notes
+
 ### Recompile schemas after changes
 
 ```bash
@@ -130,8 +131,44 @@ Or use npx to check code coverage.
 npx vitest --coverage
 ```
 
+## Testing when making .zip
+
+### . Create a ZIP package of the extension
+
+```bash
+zip -r show-desktop-plus@attentivecoder.zip \
+  extension.js \
+  prefs.js \
+  metadata.json \
+  core \
+  ui \
+  icons \
+  schemas \
+  -x "schemas/gschemas.compiled"
+```
+
+This produces a clean extension bundle identical to what GNOME Extensions expects.
+
+### Activate your Python virtual environment
+Use a virtualenv for testing tools:
+```bash
+. venv/bin/activate
+```
+
+### Test the extension in a sandboxed GNOME Shell session
+Using shexli (Shell Extension Live Installer):
+
+```bash
+shexli show-desktop-plus@attentivecoder.zip
+```
+
 ## Reviewer notes
 On the GNOME Extensions review sandbox, right‑click cannot open preferences (sandbox limitation).
+
+### shexli warning about unreachable JS files
+shexli may warn that some JavaScript files are “not reachable” from extension.js.
+This is expected for GNOME Shell extensions, which load modules dynamically and do not use ES module imports.
+All files in core/ are used at runtime.
 
 ### View project tree (excluding node_modules):
 ```bash
