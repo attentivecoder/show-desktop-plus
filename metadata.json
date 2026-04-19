@@ -1,0 +1,20 @@
+{
+  "uuid": "show-desktop-plus@attentivecoder",
+  "name": "Show Desktop Plus",
+  "description": "Enhanced show desktop functionality with per-workspace hiding, monitor awareness, hotkey support, and a dynamic panel indicator.",
+  "version": 1,
+  "extension-id": "show-desktop-plus",
+  "gettext-domain": "show-desktop-plus",
+  "settings-schema": "org.gnome.shell.extensions.show-desktop-plus",
+  "stylesheet": "stylesheet.css",
+  "preferences": "prefs/prefs.js",
+  "shell-version": [
+    "45",
+    "46",
+    "47",
+    "48",
+    "49",
+    "50"
+  ],
+  "url": "https://github.com/attentivecoder/show-desktop-plus"
+}

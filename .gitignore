@@ -1,0 +1,33 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Vitest / Coverage
+coverage/
+.vitest/
+
+# Python virtual environment
+venv/
+.env/
+.venv/
+
+# Logs
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+
+# Build artifacts (if any)
+dist/
+build/
+
+# GNOME extension packaging
+*.zip
