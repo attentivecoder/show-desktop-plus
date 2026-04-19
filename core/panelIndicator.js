@@ -74,48 +74,70 @@ export default class PanelIndicator {
                 return Clutter.EVENT_STOP;
             }
 
-           if (button === 3) {
-            GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-                try {
-                    const currentWs = global.workspace_manager.get_active_workspace();
-                    const windows = global.display.get_tab_list(
-                        Meta.TabList.NORMAL_ALL,
-                        null
-                    );
+            if (button === 3) {
+                GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+                    try {
+                        const currentWs = global.workspace_manager.get_active_workspace();
+                        const windows = global.display.get_tab_list(
+                            Meta.TabList.NORMAL_ALL,
+                            null
+                        );
 
-                    let prefsWin = null;
-                    for (const w of windows) {
-                        if (w.title && w.title.includes(this._extension._extensionName)) {
-                            prefsWin = w;
-                            break;
+                        let prefsWin = null;
+
+                        for (const w of windows) {
+                            try {
+                                const title =
+                                    typeof w.get_title === 'function'
+                                        ? w.get_title()
+                                        : w.title;
+
+                                if (title && title.includes(this._extension._extensionName)) {
+                                    prefsWin = w;
+                                    break;
+                                }
+                            } catch (e) {
+                            }
+                        }
+
+                        if (prefsWin) {
+                            try {
+                                if (typeof prefsWin.get_workspace === 'function' &&
+                                    typeof prefsWin.change_workspace === 'function') {
+
+                                    if (prefsWin.get_workspace() !== currentWs)
+                                        prefsWin.change_workspace(currentWs);
+                                }
+
+                                if (typeof prefsWin.activate === 'function') {
+                                    prefsWin.activate(global.get_current_time());
+                                } else {
+                                    this._extension.openPreferences();
+                                }
+
+                            } catch (e) {
+                                this._extension.openPreferences();
+                            }
+
+                        } else {
+
+                            this._extension.openPreferences();
+                        }
+
+                    } catch (e) {
+                        log(`Prefs handler error: ${e}`);
+                        try {
+                            this._extension.openPreferences();
+                        } catch (e2) {
+                            log(`Fallback prefs open failed: ${e2}`);
                         }
                     }
 
-                    if (prefsWin) {
-                        if (prefsWin.get_workspace() !== currentWs)
-                            prefsWin.change_workspace(currentWs);
+                    return GLib.SOURCE_REMOVE;
+                });
 
-                        if (typeof prefsWin.activate === 'function')
-                            prefsWin.activate(global.get_current_time());
-                    } else {
-                        this._extension.openPreferences();
-                    }
-
-                } catch (e) {
-                    log(`Prefs handler error: ${e}`);
-                    try {
-                        this._extension.openPreferences();
-                    } catch (e2) {
-                        log(`Fallback prefs open failed: ${e2}`);
-                    }
-                }
-
-                return GLib.SOURCE_REMOVE;
-            });
-
-            return Clutter.EVENT_STOP;
-        }
-
+                return Clutter.EVENT_STOP;
+            }
 
             return Clutter.EVENT_PROPAGATE;
         });

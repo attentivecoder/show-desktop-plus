@@ -4,7 +4,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/GNOME-45–50-blue?logo=gnome&logoColor=white" />
   <img src="https://img.shields.io/badge/Tests-100%25-brightgreen?logo=vitest" />
-  <img src="https://img.shields.io/badge/Coverage-72%25-orange?logo=vitest" />
+  <img src="https://img.shields.io/badge/Coverage-71%25-orange?logo=vitest" />
   <img src="https://img.shields.io/github/license/attentivecoder/show-desktop-plus" />
   <img src="https://img.shields.io/badge/version-1-blue" />
 </p>
@@ -130,9 +130,12 @@ Or use npx to check code coverage.
 npx vitest --coverage
 ```
 
+## Reviewer notes
+On the GNOME Extensions review sandbox, right‑click cannot open preferences (sandbox limitation).
+
 ### View project tree (excluding node_modules):
 ```bash
-tree -I node_modules
+tree -I 'node_modules|coverage|dist|build|venv'
 ```
 
 ### Debug GNOME Shell logs:

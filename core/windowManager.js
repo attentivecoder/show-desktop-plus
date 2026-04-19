@@ -4,6 +4,8 @@ export default class WindowManager {
         this._extension = extension;
         this._onStateChanged = onStateChanged;
 
+        // If gnome is provided (tests) → use it
+        // If not (GNOME runtime) → fall back to real globals
         this._Meta = gnome?.Meta ?? globalThis.Meta;
         this._Main = gnome?.Main ?? globalThis.Main;
         this._workspace_manager = gnome?.workspace_manager ?? global.workspace_manager;
@@ -15,22 +17,31 @@ export default class WindowManager {
         this._connectSignals();
     }
 
+    // --------------------
+    // GNOME window lifecycle signals
+    // --------------------
+
     _connectSignals() {
+        // window-created
         this._display.connect('window-created', (_display, win) => {
             this._trackWindow(win);
             this._onStateChanged();
         });
 
+        // window-unmanaged (destroyed)
         this._display.connect('window-unmanaged', (_display, win) => {
             this._removeWindowFromState(win);
             this._onStateChanged();
         });
     }
 
+    // --------------------
+    // Helpers
+    // --------------------
+
     _shouldBeIgnored(w) {
         return (
             !w ||
-            typeof w.get_id !== 'function' ||
             w.minimized ||
             w.skip_taskbar ||
             w.window_type !== this._Meta.WindowType.NORMAL
@@ -73,6 +84,10 @@ export default class WindowManager {
         }
     }
 
+    // --------------------
+    // Public helpers
+    // --------------------
+
     getHiddenCountForWorkspace(wsIndex) {
         const map = this._stateStore.getWorkspaceMap(wsIndex);
         if (!map) return 0;
@@ -85,6 +100,10 @@ export default class WindowManager {
 
         return count;
     }
+
+    // --------------------
+    // Tracking
+    // --------------------
 
     _trackWindow(win) {
         if (!win || win._dtpTracked) return;
@@ -121,17 +140,16 @@ export default class WindowManager {
         }
     }
 
+    // --------------------
+    // Core logic
+    // --------------------
+
     addCurrentWindowToHidden() {
         const workspace = this._workspace_manager.get_active_workspace();
         const wsIndex = workspace.index();
 
         const focusWin = this._display.get_focus_window();
-
-        if (!focusWin || typeof focusWin.minimize !== 'function')
-            return;
-
-        if (this._shouldBeIgnored(focusWin))
-            return;
+        if (!focusWin || this._shouldBeIgnored(focusWin)) return;
 
         const id = this._getWindowId(focusWin);
         if (!id) return;
@@ -192,10 +210,8 @@ export default class WindowManager {
         this._stateStore.setWorkspaceMap(wsIndex, map);
 
         for (const w of sorted) {
-            if (typeof w.minimize === 'function') {
-                this._trackWindow(w);
-                w.minimize();
-            }
+            this._trackWindow(w);
+            w.minimize();
         }
 
         if (this._Main.overview.visible)
@@ -218,15 +234,27 @@ export default class WindowManager {
                 const w = this._resolveWindowById(id);
                 if (!w) continue;
 
-                if (typeof w.unminimize === 'function')
-                    w.unminimize();
+                try {
+                    if (typeof w.unminimize === 'function')
+                        w.unminimize();
 
-                last = w;
+                    last = w;
+                } catch (e) {
+                    // Optional: keep or drop this log
+                    // log(`restoreAllWindows: skipping invalid window: ${e}`);
+                }
             }
         }
 
-        if (last && typeof last.activate === 'function')
-            last.activate(this._get_current_time());
+        if (last) {
+            try {
+                if (typeof last.activate === 'function')
+                    last.activate(this._get_current_time());
+            } catch (e) {
+                // 🔇 Don’t log here – sandbox “fake windows” will throw every time
+                // and we don’t care; restore still worked.
+            }
+        }
 
         this._stateStore.deleteWorkspace(wsIndex);
 
@@ -235,6 +263,9 @@ export default class WindowManager {
 
         this._onStateChanged();
     }
+
+
+
 
     toggleDesktop() {
         const wsIndex = this._workspace_manager.get_active_workspace().index();

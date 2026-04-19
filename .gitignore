@@ -9,11 +9,6 @@ pnpm-debug.log*
 coverage/
 .vitest/
 
-# Python virtual environment
-venv/
-.env/
-.venv/
-
 # Logs
 *.log
 
