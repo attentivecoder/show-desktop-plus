@@ -5,6 +5,7 @@
   <img src="https://img.shields.io/badge/GNOME-45–50-blue?logo=gnome&logoColor=white" />
   <img src="https://img.shields.io/badge/Tests-100%25-brightgreen?logo=vitest" />
   <img src="https://img.shields.io/badge/Coverage-73%25-orange?logo=vitest" />
+  <img src="https://img.shields.io/badge/Mutation%20Testing-Stryker%20Enabled-purple?logo=stryker" />
   <img src="https://img.shields.io/github/license/attentivecoder/show-desktop-plus" />
   <img src="https://img.shields.io/badge/version-1-blue" />
 </p>
@@ -70,12 +71,14 @@ Originally based on the “Show Desktop Applet” extension — now heavily rewr
 ## Installation
 ### From source (development)
 Clone into your local GNOME extensions directory:
+
 ```bash
 git clone https://github.com/attentivecoder/show-desktop-plus.git \
   ~/.local/share/gnome-shell/extensions/show-desktop-plus@attentivecoder
 ```
 
 Compile schemas:
+
 ```bash
 glib-compile-schemas ~/.local/share/gnome-shell/extensions/show-desktop-plus@attentivecoder/schemas/
 ```
@@ -108,6 +111,7 @@ sudo glib-compile-schemas /usr/share/glib-2.0/schemas/
 ```
 
 Verify schema changes:
+
 ```bash
 gsettings list-keys org.gnome.shell.extensions.show-desktop-plus
 ```
@@ -115,6 +119,7 @@ gsettings list-keys org.gnome.shell.extensions.show-desktop-plus
 ## Testing
 This extension includes a full Vitest test suite.
 Run tests:
+
 ```bash
 npm test
 ```
@@ -129,6 +134,21 @@ Or use npx to check code coverage.
 
 ```bash
 npx vitest --coverage
+```
+
+## Mutation Testing (Stryker)
+This project uses Stryker, a mutation testing tool that evaluates how effective the test suite is by introducing small changes (“mutants”) into the code and verifying that the tests catch them.
+
+Run mutation tests:
+
+```bash
+npx stryker run
+```
+
+A detailed HTML report is generated in:
+
+```bash
+reports/mutation/mutation.html
 ```
 
 ## Testing when making .zip
@@ -151,6 +171,7 @@ This produces a clean extension bundle identical to what GNOME Extensions expect
 
 ### Activate your Python virtual environment
 Use a virtualenv for testing tools:
+
 ```bash
 . venv/bin/activate
 ```
