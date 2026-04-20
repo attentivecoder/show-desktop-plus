@@ -9,6 +9,7 @@ describe('PanelIndicator – right-click defensive behavior', () => {
         const event = { get_button: () => 3 };
         indicator._panelButton.emit('button-release-event', event);
     }
+
     beforeEach(() => {
         gnome = createMockGnomeAPI([]);
 
@@ -16,6 +17,7 @@ describe('PanelIndicator – right-click defensive behavior', () => {
 
         mockExtension = {
             _extensionName: 'show-desktop-plus',
+            metadata: { name: 'show-desktop-plus' },
             _settings: { get_enum: () => 0 },
             openPreferences: vi.fn(),
         };
@@ -45,7 +47,9 @@ describe('PanelIndicator – right-click defensive behavior', () => {
 
     it('focuses existing prefs window (get_title)', () => {
         const prefsWin = {
+            title: 'show-desktop-plus Preferences',
             get_title: () => 'show-desktop-plus Preferences',
+            get_wm_class: () => 'org.gnome.Shell.Extensions',
             activate: vi.fn(),
             get_workspace: () => gnome.workspace_manager.get_active_workspace(),
             change_workspace: vi.fn(),
@@ -61,6 +65,7 @@ describe('PanelIndicator – right-click defensive behavior', () => {
     it('focuses existing prefs window (.title)', () => {
         const prefsWin = {
             title: 'show-desktop-plus Preferences',
+            get_wm_class: () => 'org.gnome.Shell.Extensions',
             activate: vi.fn(),
             get_workspace: () => gnome.workspace_manager.get_active_workspace(),
             change_workspace: vi.fn(),
@@ -76,6 +81,7 @@ describe('PanelIndicator – right-click defensive behavior', () => {
     it('falls back to openPreferences() if activate throws', () => {
         const prefsWin = {
             get_title: () => 'show-desktop-plus Preferences',
+            get_wm_class: () => 'org.gnome.Shell.Extensions',
             activate: () => { throw new Error('boom') },
             get_workspace: () => gnome.workspace_manager.get_active_workspace(),
             change_workspace: vi.fn(),
@@ -88,4 +94,3 @@ describe('PanelIndicator – right-click defensive behavior', () => {
         expect(mockExtension.openPreferences).toHaveBeenCalled();
     });
 });
-

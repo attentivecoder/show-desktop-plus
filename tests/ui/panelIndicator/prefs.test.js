@@ -20,10 +20,13 @@ describe('PanelIndicator preferences window behavior', () => {
         globalThis.global = g;
         globalThis.log = vi.fn();
 
-        mockWindowManager = {};
+        mockWindowManager = {
+            getHiddenCountForWorkspace: () => 0,
+        };
 
         mockExtension = {
             _extensionName: 'show-desktop-plus',
+            metadata: { name: 'show-desktop-plus' },
             _settings: {
                 get_enum: vi.fn(() => 0),
                 get_boolean: vi.fn(() => false),
@@ -56,6 +59,8 @@ describe('PanelIndicator preferences window behavior', () => {
 
         const prefsWin = {
             title: 'show-desktop-plus Preferences',
+            get_title: () => 'show-desktop-plus Preferences',
+            get_wm_class: () => 'org.gnome.Shell.Extensions',
             get_workspace: () => mockWs,
             activate: vi.fn(),
             change_workspace: vi.fn(),
@@ -78,12 +83,16 @@ describe('PanelIndicator preferences window behavior', () => {
 
         const prefsWin = {
             title: 'show-desktop-plus Preferences',
+            get_title: () => 'show-desktop-plus Preferences',
+            get_wm_class: () => 'org.gnome.Shell.Extensions',
             get_workspace: () => mockWsOther,
             activate: vi.fn(),
             change_workspace: vi.fn(),
         };
 
         g.display.get_tab_list.mockReturnValue([prefsWin]);
+
+        indicator._prefsOpenedByExtension = true;
 
         indicator._panelButton.emit('button-release-event', {
             get_button: () => 3,
@@ -94,4 +103,3 @@ describe('PanelIndicator preferences window behavior', () => {
         expect(mockExtension.openPreferences).not.toHaveBeenCalled();
     });
 });
-

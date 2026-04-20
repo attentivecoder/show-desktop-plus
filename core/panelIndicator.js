@@ -3,17 +3,91 @@ export default class PanelIndicator {
         this._windowManager = windowManager;
         this._stateStore = stateStore;
         this._extension = extension;
-        this._ui = gnomeUI;
+
+        this._St = gnomeUI.St;
+        this._Clutter = gnomeUI.Clutter;
+        this._GLib = gnomeUI.GLib;
+        this._Meta = gnomeUI.Meta;
+        this._PanelMenu = gnomeUI.PanelMenu;
+        this._Main = gnomeUI.Main;
 
         this._panelButton = null;
         this._panelIcon = null;
         this._panelBadge = null;
+
+        this._prefsOpenedByExtension = false;
+    }
+
+    _safeOpenPreferences() {
+        try {
+            const result = this._extension.openPreferences();
+
+            if (result && typeof result.catch === 'function') {
+                result.catch(err => {
+                    if (typeof logError === 'function')
+                        logError(err);
+                    else
+                        log(err);
+                });
+            }
+
+        } catch (err) {
+            if (typeof logError === 'function')
+                logError(err);
+            else
+                log(err);
+        }
+    }
+
+    _findPrefsWindow() {
+        const windows = global.display.get_tab_list(
+            this._Meta.TabList.NORMAL_ALL,
+            null
+        );
+
+        const extName = this._extension.metadata.name;
+
+        return windows.find(w => {
+          //  const title = w.get_title?.() || "";            
+            const title = w.get_title?.() || w.title || "";
+            const wmClass = w.get_wm_class?.() || "";
+            return (
+                wmClass === "org.gnome.Shell.Extensions" &&
+                title.includes(extName)
+            );
+        });
+    }
+
+    _handlePrefsWindow() {
+        const prefsWin = this._findPrefsWindow();
+        const currentWs = global.workspace_manager.get_active_workspace();
+
+        if (!prefsWin) {
+            this._prefsOpenedByExtension = true;
+            this._safeOpenPreferences();
+            return;
+        }
+
+        try {
+            if (this._prefsOpenedByExtension) {
+                if (prefsWin.get_workspace() !== currentWs)
+                    prefsWin.change_workspace(currentWs);
+            }
+
+            prefsWin.activate(global.get_current_time());
+
+        } catch {
+            this._safeOpenPreferences();
+        }
     }
 
     _createPanelButton() {
         if (this._panelButton) return;
 
-        const { St, Clutter, GLib, Meta, PanelMenu } = this._ui;
+        const St = this._St;
+        const Clutter = this._Clutter;
+        const GLib = this._GLib;
+        const PanelMenu = this._PanelMenu;
 
         this._panelButton = new PanelMenu.Button(
             0.0,
@@ -75,65 +149,9 @@ export default class PanelIndicator {
             }
 
             if (button === 3) {
-                GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-                    try {
-                        const currentWs = global.workspace_manager.get_active_workspace();
-                        const windows = global.display.get_tab_list(
-                            Meta.TabList.NORMAL_ALL,
-                            null
-                        );
-
-                        let prefsWin = null;
-
-                        for (const w of windows) {
-                            try {
-                                const title =
-                                    typeof w.get_title === 'function'
-                                        ? w.get_title()
-                                        : w.title;
-
-                                if (title && title.includes(this._extension._extensionName)) {
-                                    prefsWin = w;
-                                    break;
-                                }
-                            } catch (e) {
-                            }
-                        }
-
-                        if (prefsWin) {
-                            try {
-                                if (typeof prefsWin.get_workspace === 'function' &&
-                                    typeof prefsWin.change_workspace === 'function') {
-
-                                    if (prefsWin.get_workspace() !== currentWs)
-                                        prefsWin.change_workspace(currentWs);
-                                }
-
-                                if (typeof prefsWin.activate === 'function') {
-                                    prefsWin.activate(global.get_current_time());
-                                } else {
-                                    this._extension.openPreferences();
-                                }
-
-                            } catch (e) {
-                                this._extension.openPreferences();
-                            }
-
-                        } else {
-
-                            this._extension.openPreferences();
-                        }
-
-                    } catch (e) {
-                        log(`Prefs handler error: ${e}`);
-                        try {
-                            this._extension.openPreferences();
-                        } catch (e2) {
-                            log(`Fallback prefs open failed: ${e2}`);
-                        }
-                    }
-
-                    return GLib.SOURCE_REMOVE;
+                this._GLib.idle_add(this._GLib.PRIORITY_DEFAULT, () => {
+                    this._handlePrefsWindow();
+                    return this._GLib.SOURCE_REMOVE;
                 });
 
                 return Clutter.EVENT_STOP;
@@ -144,8 +162,6 @@ export default class PanelIndicator {
     }
 
     addToPanel() {
-        const { Main } = this._ui;
-
         const role = `${this._extension._extensionName} Indicator`;
 
         const positions = ['left', 'left', 'center', 'right', 'right'];
@@ -153,7 +169,7 @@ export default class PanelIndicator {
 
         this._createPanelButton();
 
-        Main.panel.addToStatusArea(
+        this._Main.panel.addToStatusArea(
             role,
             this._panelButton,
             offsets[this._extension._settings.get_enum('button-position')],

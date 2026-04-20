@@ -3,7 +3,7 @@ import ExtensionController from './extensionController.js';
 
 export default class DesktopToggleExtension extends Extension {
     enable() {
-        this._extensionName = this.metadata.name || 'Desktop Toggle';
+        this._extensionName = this.metadata.name || 'Show Desktop Plus';
         this._settings = this.getSettings();
 
         this._controller = new ExtensionController(this);

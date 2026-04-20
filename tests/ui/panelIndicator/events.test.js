@@ -232,6 +232,7 @@ describe('PanelIndicator – right‑click behavior (preferences)', () => {
 
         mockExtension = {
             _extensionName: 'show-desktop-plus',
+            metadata: { name: 'show-desktop-plus' },
             openPreferences: vi.fn(),
             _settings: {
                 get_enum: vi.fn(),
@@ -258,11 +259,13 @@ describe('PanelIndicator – right‑click behavior (preferences)', () => {
         clickRight();
 
         expect(mockExtension.openPreferences).toHaveBeenCalledTimes(1);
+        expect(indicator._prefsOpenedByExtension).toBe(true);
     });
 
     it('right-click: focuses preferences when already open', () => {
         const prefsWin = {
-            title: 'show-desktop-plus Preferences',
+            get_title: () => 'show-desktop-plus Preferences',
+            get_wm_class: () => 'org.gnome.Shell.Extensions',
             get_workspace: vi.fn(() => global.workspace_manager.get_active_workspace()),
             change_workspace: vi.fn(),
             activate: vi.fn(),
@@ -273,6 +276,7 @@ describe('PanelIndicator – right‑click behavior (preferences)', () => {
         clickRight();
 
         expect(prefsWin.activate).toHaveBeenCalledTimes(1);
+        expect(prefsWin.change_workspace).not.toHaveBeenCalled();
         expect(mockExtension.openPreferences).not.toHaveBeenCalled();
     });
 
@@ -285,6 +289,7 @@ describe('PanelIndicator – right‑click behavior (preferences)', () => {
         expect(mockWindowManager.addCurrentWindowToHidden).not.toHaveBeenCalled();
     });
 });
+
 
 describe('PanelIndicator mouse click events', () => {
     let g;
@@ -315,8 +320,9 @@ describe('PanelIndicator mouse click events', () => {
 
         mockExtension = {
             _extensionName: 'show-desktop-plus',
+            metadata: { name: 'show-desktop-plus' },
             _settings: {
-                get_enum: vi.fn(() => 0), // default action
+                get_enum: vi.fn(() => 0),
                 get_boolean: vi.fn(() => false),
             },
             openPreferences: vi.fn(),
