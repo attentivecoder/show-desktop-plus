@@ -138,7 +138,7 @@ describe('WindowManager – GNOME Shell version compatibility', () => {
 
     it('tolerates missing overview object (GNOME API change)', () => {
         const g = makeMinimalGnomeAPI({
-            Main: {}, // no overview
+            Main: {},
         });
 
         const stateStore = new StateStore();

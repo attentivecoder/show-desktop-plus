@@ -1,7 +1,7 @@
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import ExtensionController from './extensionController.js';
 
-export default class DesktopToggleExtension extends Extension {
+export default class ShowDesktopPlus extends Extension {
     enable() {
         this._extensionName = this.metadata.name || 'Show Desktop Plus';
         this._settings = this.getSettings();

@@ -4,7 +4,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/GNOME-45–50-blue?logo=gnome&logoColor=white" />
   <img src="https://img.shields.io/badge/Tests-100%25-brightgreen?logo=vitest" />
-  <img src="https://img.shields.io/badge/Coverage-72%25-orange?logo=vitest" />
+  <img src="https://img.shields.io/badge/Coverage-73%25-orange?logo=vitest" />
   <img src="https://img.shields.io/github/license/attentivecoder/show-desktop-plus" />
   <img src="https://img.shields.io/badge/version-1-blue" />
 </p>
@@ -162,14 +162,6 @@ Using shexli (Shell Extension Live Installer):
 shexli show-desktop-plus@attentivecoder.zip
 ```
 
-## Reviewer notes
-On the GNOME Extensions review sandbox, right‑click cannot open preferences (sandbox limitation).
-
-### shexli warning about unreachable JS files
-shexli may warn that some JavaScript files are “not reachable” from extension.js.
-This is expected for GNOME Shell extensions, which load modules dynamically and do not use ES module imports.
-All files in core/ are used at runtime.
-
 ### View project tree (excluding node_modules):
 ```bash
 tree -I 'node_modules|coverage|dist|build|venv'
@@ -189,5 +181,5 @@ gsettings get org.gnome.shell.extensions.show-desktop-plus button-position
 ```
 
 ## ❤️ Credits
-- Original extension by **amivaleo**: https://github.com/amivaleo/Show-Desktop-Button
+- Original extension by **Valent-in**: https://github.com/Valent-in/Show-Desktop-Applet
 - Rewritten, modernized, and expanded by @attentivecoder

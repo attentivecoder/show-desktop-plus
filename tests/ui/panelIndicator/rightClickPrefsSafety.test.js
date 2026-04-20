@@ -21,6 +21,7 @@ describe('PanelIndicator – right-click prefs safety', () => {
 
         mockExtension = {
             _extensionName: 'show-desktop-plus',
+            metadata: { name: 'show-desktop-plus' },
             _settings: {
                 get_enum: vi.fn(() => 0),
                 get_boolean: vi.fn(() => false),

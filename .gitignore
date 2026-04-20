@@ -14,6 +14,12 @@ venv/
 .env/
 .venv/
 
+# Stryker Mutation Testing
+reports/
+.stryker-tmp/
+.mutation/
+stryker.log
+
 # Logs
 *.log
 
