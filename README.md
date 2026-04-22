@@ -169,15 +169,16 @@ reports/mutation/mutation.html
 ### Create a ZIP package of the extension
 
 ```bash
-zip -r show-desktop-plus@attentivecoder.zip \
-  extension.js \
-  prefs.js \
-  metadata.json \
-  core \
-  prefs \
-  schemas \
-  stylesheet.css \
-  -x "schemas/gschemas.compiled"
+ zip -r show-desktop-plus@attentivecoder.zip \
+            extension.js \
+            prefs.js \
+            prefs.ui \
+            metadata.json \
+            core \
+            prefs \
+            schemas \
+            stylesheet.css \
+            -x "schemas/gschemas.compiled"
 ```
 
 This produces a clean extension bundle identical to what GNOME Extensions expects.
