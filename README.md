@@ -161,9 +161,9 @@ zip -r show-desktop-plus@attentivecoder.zip \
   prefs.js \
   metadata.json \
   core \
-  ui \
-  icons \
+  prefs \
   schemas \
+  stylesheet.css \
   -x "schemas/gschemas.compiled"
 ```
 

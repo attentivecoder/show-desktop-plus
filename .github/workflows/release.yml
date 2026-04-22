@@ -31,14 +31,14 @@ jobs:
       - name: Build zip
         run: |
           zip -r show-desktop-plus@attentivecoder.zip \
-            extension.js \
-            prefs.js \
-            metadata.json \
-            core \
-            ui \
-            schemas \
-            stylesheet.css \
-            -x "schemas/gschemas.compiled"
+	     extension.js \
+	     prefs.js \
+	     metadata.json \
+	     core \
+	     prefs \
+	     schemas \
+	     stylesheet.css \
+	     -x "schemas/gschemas.compiled"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
