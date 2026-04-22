@@ -166,7 +166,7 @@ reports/mutation/mutation.html
 
 ## Testing when making .zip
 
-### . Create a ZIP package of the extension
+### Create a ZIP package of the extension
 
 ```bash
 zip -r show-desktop-plus@attentivecoder.zip \
@@ -227,7 +227,7 @@ git tag v0.1
 git push origin v0.1
 ```
 
-### ➖ Delete a tag
+### Delete a tag
 
 ```bash
 git tag -d v0.1
