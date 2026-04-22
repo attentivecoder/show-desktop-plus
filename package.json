@@ -1,6 +1,7 @@
 {
   "name": "show-desktop-plus",
   "version": "1.0.0",
+  "type": "module",
   "description": "A smarter, workspace-aware Show Desktop extension for GNOME Shell.",
   "main": "extension.js",
   "scripts": {
