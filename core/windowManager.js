@@ -6,25 +6,59 @@ export default class WindowManager {
 
         this._Meta = gnome?.Meta ?? globalThis.Meta;
         this._Main = gnome?.Main ?? globalThis.Main;
-        this._workspace_manager = gnome?.workspace_manager ?? global.workspace_manager;
-        this._display = gnome?.display ?? global.display;
+        this._workspace_manager = gnome?.workspace_manager ?? global.get_workspace_manager();
+        this._display = gnome?.display ?? global.get_display();
         this._get_current_time = gnome?.get_current_time ?? global.get_current_time;
-    }
 
-    enable() {
+        this._displaySignals = [];
+        this._windowSignals = new Map();
+
         this._connectSignals();
     }
 
     _connectSignals() {
-        this._display.connect('window-created', (_display, win) => {
+        const id1 = this._display.connect('window-created', (_d, win) => {
             this._trackWindow(win);
             this._onStateChanged();
         });
 
-        this._display.connect('window-unmanaged', (_display, win) => {
+        this._displaySignals.push(id1);
+    }
+
+    _trackWindow(win) {
+        if (!win || win._dtpTracked) return;
+        win._dtpTracked = true;
+
+        const ids = [];
+
+        ids.push(win.connect('unmanaged', () => {
             this._removeWindowFromState(win);
             this._onStateChanged();
-        });
+        }));
+
+        ids.push(win.connect('notify::minimized', () => {
+            if (!win.minimized) {
+                this._removeWindowFromState(win);
+                this._onStateChanged();
+            }
+        }));
+
+        this._windowSignals.set(win, ids);
+    }
+
+    disable() {
+        for (const id of this._displaySignals)
+            this._display.disconnect(id);
+        this._displaySignals = [];
+
+        for (const [win, ids] of this._windowSignals) {
+            for (const id of ids)
+                win.disconnect(id);
+
+            delete win._dtpTracked;
+        }
+
+        this._windowSignals.clear();
     }
 
     _shouldBeIgnored(w) {
@@ -83,23 +117,6 @@ export default class WindowManager {
             count += list.length;
 
         return count;
-    }
-
-    _trackWindow(win) {
-        if (!win || win._dtpTracked) return;
-        win._dtpTracked = true;
-
-        win.connect('unmanaged', () => {
-            this._removeWindowFromState(win);
-            this._onStateChanged();
-        });
-
-        win.connect('notify::minimized', () => {
-            if (!win.minimized) {
-                this._removeWindowFromState(win);
-                this._onStateChanged();
-            }
-        });
     }
 
     _removeWindowFromState(win) {
@@ -215,9 +232,7 @@ export default class WindowManager {
                         w.unminimize();
 
                     last = w;
-                } catch (e) {
-                    // Intentionally silent
-                }
+                } catch {}
             }
         }
 
@@ -225,9 +240,7 @@ export default class WindowManager {
             try {
                 if (typeof last.activate === 'function')
                     last.activate(this._get_current_time());
-            } catch (e) {
-                // Intentionally silent
-            }
+            } catch {}
         }
 
         this._stateStore.deleteWorkspace(wsIndex);
@@ -237,7 +250,7 @@ export default class WindowManager {
 
         this._onStateChanged();
     }
-    
+
     toggleDesktop() {
         const wsIndex = this._workspace_manager.get_active_workspace().index();
 

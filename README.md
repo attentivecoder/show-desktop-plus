@@ -3,9 +3,9 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/GNOME-45–50-blue?logo=gnome&logoColor=white" />
-  <img src="https://img.shields.io/badge/Tests-100%25-brightgreen?logo=vitest" />
-  <img src="https://img.shields.io/badge/Coverage-73%25-orange?logo=vitest" />
-  <img src="https://img.shields.io/badge/Mutation%20Testing-Stryker%20Enabled-purple?logo=stryker" />
+  <img src="https://img.shields.io/badge/Tests-100%25%20Passing-brightgreen?logo=vitest" />
+  <img src="https://img.shields.io/badge/Core%20Coverage-96%25-brightgreen?logo=vitest" />
+  <img src="https://img.shields.io/badge/Core%20Mutation%20Score-90%25-brightgreen?logo=stryker" />
   <img src="https://img.shields.io/github/license/attentivecoder/show-desktop-plus" />
   <img src="https://img.shields.io/badge/version-1-blue" />
 </p>

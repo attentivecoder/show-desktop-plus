@@ -17,14 +17,19 @@ export default class HotkeyManager {
         const flag = Meta.KeyBindingFlags.IGNORE_AUTOREPEAT;
 
         if (this._extension._settings.get_boolean('enable-hotkey')) {
-            Main.wm.addKeybinding(
-                'show-desktop-hotkey',
-                this._extension._settings,
-                flag,
-                mode,
-                () => this._windowManager.toggleDesktop()
-            );
-            this._isHotkeySet = true;
+            try {
+                Main.wm.addKeybinding(
+                    'show-desktop-hotkey',
+                    this._extension._settings,
+                    flag,
+                    mode,
+                    () => this._windowManager.toggleDesktop()
+                );
+                this._isHotkeySet = true;
+            } catch (e) {
+                // swallow or log — your choice
+                console.error('Failed to add keybinding', e);
+            }
         }
     }
 

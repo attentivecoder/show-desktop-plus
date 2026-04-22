@@ -56,5 +56,17 @@ describe('HotkeyManager', () => {
 
         expect(wm.toggleDesktop).toHaveBeenCalled();
     });
+
+    test('does not crash if addKeybinding throws', () => {
+        fakeUi.Main.wm.addKeybinding.mockImplementation(() => {
+            throw new Error('boom');
+        });
+
+        expect(() => manager.enable()).not.toThrow();
+    });
+
+    test('disable() is safe even if enable() was never called', () => {
+        expect(() => manager.disable()).not.toThrow();
+    });
 });
 

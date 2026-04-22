@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createMockGnomeAPI } from '../../mocks/gnome/gnome.js';
+import { createMockWindow } from '../../mocks/gnome/window.js';
 import PanelIndicator from '../../../core/panelIndicator.js';
 
 describe('PanelIndicator preferences window behavior', () => {
@@ -55,16 +56,16 @@ describe('PanelIndicator preferences window behavior', () => {
     });
 
     it('focuses existing prefs window on same workspace', () => {
-        const mockWs = g.workspace_manager.get_active_workspace();
+        const ws = g.workspace_manager.get_active_workspace();
 
-        const prefsWin = {
-            title: 'show-desktop-plus Preferences',
-            get_title: () => 'show-desktop-plus Preferences',
-            get_wm_class: () => 'org.gnome.Shell.Extensions',
-            get_workspace: () => mockWs,
-            activate: vi.fn(),
-            change_workspace: vi.fn(),
-        };
+    const prefsWin = createMockWindow(1, 0, {
+        title: 'show-desktop-plus Preferences',
+        wmClass: 'org.gnome.Shell.Extensions',
+        workspace: ws.index(),
+    });
+prefsWin.get_workspace = () => ws;
+
+       
 
         g.display.get_tab_list.mockReturnValue([prefsWin]);
 
@@ -78,17 +79,16 @@ describe('PanelIndicator preferences window behavior', () => {
     });
 
     it('moves prefs window to current workspace and activates it', () => {
-        const mockWsCurrent = g.workspace_manager.get_active_workspace();
-        const mockWsOther = { index: () => 1 };
+        const wsCurrent = g.workspace_manager.get_active_workspace();
+        const wsOther = { index: () => 1 };
 
-        const prefsWin = {
+        const prefsWin = createMockWindow(1, 0, {
             title: 'show-desktop-plus Preferences',
-            get_title: () => 'show-desktop-plus Preferences',
-            get_wm_class: () => 'org.gnome.Shell.Extensions',
-            get_workspace: () => mockWsOther,
-            activate: vi.fn(),
-            change_workspace: vi.fn(),
-        };
+            wmClass: 'org.gnome.Shell.Extensions',
+            workspace: wsOther.index(),
+        });
+
+        prefsWin.get_workspace = () => wsOther;
 
         g.display.get_tab_list.mockReturnValue([prefsWin]);
 
@@ -98,8 +98,9 @@ describe('PanelIndicator preferences window behavior', () => {
             get_button: () => 3,
         });
 
-        expect(prefsWin.change_workspace).toHaveBeenCalledWith(mockWsCurrent);
+        expect(prefsWin.change_workspace).toHaveBeenCalledWith(wsCurrent);
         expect(prefsWin.activate).toHaveBeenCalledTimes(1);
         expect(mockExtension.openPreferences).not.toHaveBeenCalled();
     });
 });
+

@@ -9,6 +9,12 @@ export default {
 
   testRunner: "vitest",
 
+  // ⭐ Put test file patterns here
+  testFiles: [
+    "tests/**/*.test.js",
+    "tests/**/*.mutation.test.js"
+  ],
+
   vitest: {
     configFile: "vitest.config.cjs"
   },

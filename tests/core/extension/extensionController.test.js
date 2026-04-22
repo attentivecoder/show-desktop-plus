@@ -3,8 +3,10 @@ import ExtensionController from '../../../extensionController.js';
 import { createMockGnomeAPI } from '../../mocks/gnome/gnome.js';
 
 vi.mock('../../../core/gnomeUI.js', () => ({
-    loadGnomeUI: vi.fn(async () => createMockGnomeAPI([]))
+    loadGnomeUI: vi.fn(), // we’ll control the return value in beforeEach
 }));
+
+import { loadGnomeUI } from '../../../core/gnomeUI.js';
 
 describe('ExtensionController (integration)', () => {
     let controller, extension, gnomeAPI, settings;
@@ -23,10 +25,18 @@ describe('ExtensionController (integration)', () => {
             openPreferences: vi.fn(),
         };
 
+        // Single shared GNOME API instance
         gnomeAPI = createMockGnomeAPI([]);
 
+        // Make sure display + workspace_manager have the methods we rely on
+        gnomeAPI.display.disconnect = vi.fn();
+        // workspace_manager.connect is already a vi.fn() in the mock, but we rely on get_workspace_manager
         global.workspace_manager = gnomeAPI.workspace_manager;
+        global.get_workspace_manager = () => gnomeAPI.workspace_manager;
+
         global.display = gnomeAPI.display;
+        global.get_display = () => gnomeAPI.display;
+
         global.get_current_time = gnomeAPI.get_current_time;
         global.Main = gnomeAPI.Main;
         global.PanelMenu = gnomeAPI.PanelMenu;
@@ -34,6 +44,9 @@ describe('ExtensionController (integration)', () => {
         global.Clutter = gnomeAPI.Clutter;
         global.GLib = gnomeAPI.GLib;
         global.Meta = gnomeAPI.Meta;
+
+        // Ensure ExtensionController.enable() gets THIS gnomeAPI
+        vi.mocked(loadGnomeUI).mockResolvedValue(gnomeAPI);
 
         controller = new ExtensionController(extension);
     });
@@ -49,7 +62,7 @@ describe('ExtensionController (integration)', () => {
         // Hotkey enabled
         expect(ui.Main.wm.addKeybinding).toHaveBeenCalled();
 
-        // Workspace signal connected
+        // Workspace signal connected via global.get_workspace_manager()
         expect(global.workspace_manager.connect).toHaveBeenCalled();
     });
 
@@ -75,7 +88,7 @@ describe('ExtensionController (integration)', () => {
 
         const updateSpy = vi.spyOn(controller._panelIndicator, 'updateIcon');
 
-        // Simulate workspace change
+        // Simulate workspace change (handler passed to workspace_manager.connect)
         const handler = global.workspace_manager.connect.mock.calls[0][1];
         handler();
 
@@ -87,7 +100,7 @@ describe('ExtensionController (integration)', () => {
 
         const updateSpy = vi.spyOn(controller._panelIndicator, 'updateIcon');
 
-        // Simulate settings change
+        // Simulate settings change (first settings.connect callback)
         const callback = settings.connect.mock.calls[0][1];
         callback();
 

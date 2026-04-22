@@ -21,7 +21,6 @@ describe('Focus window lifecycle behavior', () => {
         updateSpy = vi.fn();
 
         wm = new WindowManager(store, extension, updateSpy, gnomeAPI);
-        wm.enable();
     });
 
     test('focused window is hidden when hideFocusedWindow is called', () => {

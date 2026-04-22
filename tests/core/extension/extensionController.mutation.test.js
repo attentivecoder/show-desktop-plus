@@ -3,8 +3,10 @@ import ExtensionController from '../../../extensionController.js';
 import { createMockGnomeAPI } from '../../mocks/gnome/gnome.js';
 
 vi.mock('../../../core/gnomeUI.js', () => ({
-    loadGnomeUI: vi.fn(async () => createMockGnomeAPI([]))
+    loadGnomeUI: vi.fn(), 
 }));
+
+import { loadGnomeUI } from '../../../core/gnomeUI.js';
 
 describe('ExtensionController – mutation‑driven tests', () => {
     let controller, extension, gnomeAPI, settings;
@@ -25,9 +27,17 @@ describe('ExtensionController – mutation‑driven tests', () => {
 
         gnomeAPI = createMockGnomeAPI([]);
 
-        // Install GNOME globals exactly like your existing tests
+        gnomeAPI.display.disconnect = vi.fn();
+
+        vi.mocked(loadGnomeUI).mockResolvedValue(gnomeAPI);
+
+
         global.workspace_manager = gnomeAPI.workspace_manager;
+        global.get_workspace_manager = () => gnomeAPI.workspace_manager;
+
         global.display = gnomeAPI.display;
+        global.get_display = () => gnomeAPI.display;
+
         global.get_current_time = gnomeAPI.get_current_time;
         global.Main = gnomeAPI.Main;
         global.PanelMenu = gnomeAPI.PanelMenu;
@@ -39,78 +49,66 @@ describe('ExtensionController – mutation‑driven tests', () => {
         controller = new ExtensionController(extension);
     });
 
-    // -------------------------------------------------------------
-    // 1. Kill WindowManager → updateIcon callback mutant
-    // -------------------------------------------------------------
     it('invokes updateIcon when WindowManager triggers state change', async () => {
         await controller.enable();
 
         const spy = vi.spyOn(controller._panelIndicator, 'updateIcon');
 
-        // WindowManager stores this callback internally
         controller._windowManager._onStateChanged();
 
         expect(spy).toHaveBeenCalled();
     });
 
-    // -------------------------------------------------------------
-    // 2. Kill settings-change mutants
-    // -------------------------------------------------------------
     it('reacts to settings changes by updating the icon', async () => {
         await controller.enable();
 
         const spy = vi.spyOn(controller._panelIndicator, 'updateIcon');
 
-        // Trigger the callback passed to settings.connect()
         const cb = settings.connect.mock.calls[0][1];
         cb();
 
         expect(spy).toHaveBeenCalled();
     });
 
-    // -------------------------------------------------------------
-    // 3. Kill button-position block mutant
-    // -------------------------------------------------------------
     it('rebuilds panel button when button-position changes', async () => {
         await controller.enable();
 
-        const removeSpy = vi.spyOn(controller._panelIndicator, 'removeFromPanel');
+        const destroySpy = vi.spyOn(controller._panelIndicator, 'destroy');
         const addSpy = vi.spyOn(controller._panelIndicator, 'addToPanel');
+        const updateSpy = vi.spyOn(controller._panelIndicator, 'updateIcon');
 
         // Find the callback for button-position
         const cb = settings.connect.mock.calls.find(
             ([signal]) => signal === 'changed::button-position'
         )[1];
 
+        // Reset spies so earlier calls don't interfere
+        destroySpy.mockClear();
+        addSpy.mockClear();
+        updateSpy.mockClear();
+
+        // Trigger the callback
         cb();
 
-        expect(removeSpy).toHaveBeenCalled();
-        expect(addSpy).toHaveBeenCalled();
+        expect(destroySpy).toHaveBeenCalledTimes(1);
+        expect(addSpy).toHaveBeenCalledTimes(1);
+        expect(updateSpy).toHaveBeenCalledTimes(1);
     });
 
-    // -------------------------------------------------------------
-    // 4. Kill optional-chaining mutants in disable()
-    // -------------------------------------------------------------
+
     it('disable() works even if enable() was never called', () => {
         const fresh = new ExtensionController(extension);
         expect(() => fresh.disable()).not.toThrow();
     });
 
-    // -------------------------------------------------------------
-    // 5. Kill array-declaration mutant (disconnect count)
-    // -------------------------------------------------------------
     it('disconnects all settings signals on disable()', async () => {
         await controller.enable();
 
         controller.disable();
 
-        // 4 settings keys → 4 disconnect calls
         expect(settings.disconnect).toHaveBeenCalledTimes(4);
     });
 
-    // -------------------------------------------------------------
-    // 6. Kill arrow-function mutants by verifying connect() calls
-    // -------------------------------------------------------------
     it('connects all expected settings keys', async () => {
         await controller.enable();
 
@@ -121,5 +119,56 @@ describe('ExtensionController – mutation‑driven tests', () => {
         expect(calls).toContain('changed::current-monitor-only');
         expect(calls).toContain('changed::button-position');
     });
+    
+    it('updates icon when show-hidden-count changes', async () => {
+        await controller.enable();
+
+        const spy = vi.spyOn(controller._panelIndicator, 'updateIcon');
+
+        // Find the callback for show-hidden-count
+        const cb = settings.connect.mock.calls.find(
+            ([signal]) => signal === 'changed::show-hidden-count'
+        )[1];
+
+        spy.mockClear();
+
+        cb();
+
+        expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it('updates icon when current-monitor-only changes', async () => {
+        await controller.enable();
+
+        const spy = vi.spyOn(controller._panelIndicator, 'updateIcon');
+
+        const cb = settings.connect.mock.calls.find(
+            ([signal]) => signal === 'changed::current-monitor-only'
+        )[1];
+
+        spy.mockClear();
+
+        cb();
+
+        expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    
+    it('updates icon when icon-style changes', async () => {
+        await controller.enable();
+
+        const spy = vi.spyOn(controller._panelIndicator, 'updateIcon');
+
+        const cb = settings.connect.mock.calls.find(
+            ([signal]) => signal === 'changed::icon-style'
+        )[1];
+
+        spy.mockClear();
+
+        cb();
+
+        expect(spy).toHaveBeenCalledTimes(1);
+    });
+
 });
 

@@ -19,6 +19,8 @@ describe('WindowManager – restoreAllWindows defensive behavior', () => {
 
         mockDisplay = {
             get_focus_window: () => null,
+            connect: vi.fn(() => 1),
+            disconnect: vi.fn(),
         };
 
         mockMain = {

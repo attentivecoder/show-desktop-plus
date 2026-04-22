@@ -1,3 +1,4 @@
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 import WindowManager from '../../../core/windowManager.js';
 import StateStore from '../../../core/stateStore.js';
 
@@ -12,13 +13,15 @@ describe('WindowManager – non-window focus safety', () => {
             workspace_manager: {
                 get_active_workspace: () => ({
                     index: () => 0,
-                    list_windows: () => [],   // <-- required
+                    list_windows: () => [],
                 }),
             },
             display: {
-                get_focus_window: () => ({}), // <-- non-window object
+                get_focus_window: () => ({}),
                 get_current_monitor: () => 0,
                 sort_windows_by_stacking: ws => ws,
+                connect: vi.fn(() => 1),
+                disconnect: vi.fn(),
             },
             get_current_time: () => 123,
         };

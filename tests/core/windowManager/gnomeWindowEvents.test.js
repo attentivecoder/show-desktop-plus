@@ -3,13 +3,10 @@ import { createMockGnomeAPI } from '../../mocks/gnome/gnome.js';
 
 const windows = [];
 
-vi.mock('../../../core/gnomeUi.js', () => ({
+vi.mock('../../../core/gnomeUI.js', () => ({
     loadGnomeUi: () => createMockGnomeAPI(windows),
 }));
 
-// ------------------------------------------------------------
-// Now import the rest of the test dependencies
-// ------------------------------------------------------------
 import { describe, test, expect, beforeEach } from 'vitest';
 import WindowManager from '../../../core/windowManager.js';
 import { createMockWindow } from '../../mocks/gnome/window.js';
@@ -22,6 +19,14 @@ describe('Window lifecycle events', () => {
         store = createStore();
         gnomeAPI = createMockGnomeAPI([]);
 
+        globalThis.global = gnomeAPI;
+        globalThis.display = gnomeAPI.display;
+        globalThis.workspace_manager = gnomeAPI.workspace_manager;
+        globalThis.get_workspace_manager = () => gnomeAPI.workspace_manager;
+        globalThis.Meta = gnomeAPI.Meta;
+        globalThis.Main = gnomeAPI.Main;
+        globalThis.get_current_time = gnomeAPI.get_current_time;
+
         extension = {
             _settings: {
                 get_boolean: vi.fn(() => false),
@@ -32,7 +37,6 @@ describe('Window lifecycle events', () => {
         updateSpy = vi.fn();
 
         wm = new WindowManager(store, extension, updateSpy, gnomeAPI);
-         wm.enable(); 
     });
 
     test('window-created triggers updateIcon', () => {
@@ -46,11 +50,16 @@ describe('Window lifecycle events', () => {
     test('window-unmanaged removes window from hidden list', () => {
         const win = createMockWindow(1);
 
+        // Put window into hidden state for workspace 0
         const map = new Map();
         map.set(-1, [win.get_id()]);
         store.setWorkspaceMap(0, map);
 
-        gnomeAPI.display.emit('window-unmanaged', win);
+        // Make WindowManager track this window
+        gnomeAPI.display.emit('window-created', win);
+
+        // Now simulate the window being unmanaged
+        win.emit('unmanaged');
 
         expect(store.getWorkspaceMap(0)).toBeUndefined();
     });

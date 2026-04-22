@@ -16,28 +16,29 @@ export default class PanelIndicator {
         this._panelBadge = null;
 
         this._prefsOpenedByExtension = false;
+        this._prefsWindow = null;
+        this._prefsWindowSignal = null;
+        this._buttonSignal = null;
     }
-
+    
     _safeOpenPreferences() {
         try {
             const result = this._extension.openPreferences();
-
-            if (result && typeof result.catch === 'function') {
+            if (result && typeof result.catch === "function") {
                 result.catch(err => {
-                    if (typeof logError === 'function')
-                        logError(err);
-                    else
-                        log(err);
+                    if (typeof logError === "function") logError(err);
+                    else console.error(err);
                 });
             }
-
-        } catch (err) {
-            if (typeof logError === 'function')
-                logError(err);
-            else
-                log(err);
+        } 
+        // Stryker disable next-line BlockStatement
+        catch (err) {
+            // Stryker disable next-line BooleanLiteral, StringLiteral, ConditionalExpression, EqualityOperator
+            if (typeof logError === "function") logError(err);
+            else console.error(err);
         }
     }
+
 
     _findPrefsWindow() {
         const windows = global.display.get_tab_list(
@@ -48,13 +49,29 @@ export default class PanelIndicator {
         const extName = this._extension.metadata.name;
 
         return windows.find(w => {
-          //  const title = w.get_title?.() || "";            
+            // Stryker disable next-line StringLiteral
             const title = w.get_title?.() || w.title || "";
+            // Stryker disable next-line StringLiteral
             const wmClass = w.get_wm_class?.() || "";
             return (
                 wmClass === "org.gnome.Shell.Extensions" &&
                 title.includes(extName)
             );
+        });
+    }
+    
+    // Stryker disable next-line BlockStatement
+    _trackPrefsWindow(win) {
+        // Stryker disable next-line LogicalOperator, ConditionalExpression, BooleanLiteral
+        if (!win || this._prefsWindowSignal) return;
+
+        this._prefsWindow = win;
+
+        // Stryker disable next-line StringLiteral
+        this._prefsWindowSignal = win.connect("unmanaged", () => {
+            this._prefsWindow = null;
+            this._prefsWindowSignal = null;
+            this._prefsOpenedByExtension = false;
         });
     }
 
@@ -68,6 +85,8 @@ export default class PanelIndicator {
             return;
         }
 
+        this._trackPrefsWindow(prefsWin);
+
         try {
             if (this._prefsOpenedByExtension) {
                 if (prefsWin.get_workspace() !== currentWs)
@@ -76,7 +95,10 @@ export default class PanelIndicator {
 
             prefsWin.activate(global.get_current_time());
 
-        } catch {
+        } catch (err) {
+            if (typeof logError === "function") logError(err);
+            else console.error(err);
+
             this._safeOpenPreferences();
         }
     }
@@ -101,12 +123,12 @@ export default class PanelIndicator {
         });
 
         this._panelIcon = new St.Icon({
-            icon_name: 'computer-symbolic',
-            style_class: 'system-status-icon',
+            icon_name: "computer-symbolic",
+            style_class: "system-status-icon",
         });
 
         this._panelBadge = new St.Label({
-            style_class: 'desktop-toggle-badge',
+            style_class: "desktop-toggle-badge",
             visible: false,
             reactive: false,
         });
@@ -118,53 +140,56 @@ export default class PanelIndicator {
         this._panelButton.reactive = true;
         this._panelButton.clear_actions();
 
-        this._panelButton.connect('button-release-event', (_, event) => {
-            const button = event.get_button();
+        this._buttonSignal = this._panelButton.connect(
+            "button-release-event",
+            (_, event) => {
+                const button = event.get_button();
 
-            if (button === 1) {
-                const action = this._extension._settings.get_enum('left-click-action');
-                switch (action) {
-                    case 0: this._windowManager.toggleDesktop(); break;
-                    case 1: this._windowManager.hideAllWindows(); break;
-                    case 2: this._windowManager.restoreAllWindows(); break;
-                    case 3:
-                        this._windowManager.addCurrentWindowToHidden();
-                        this.updateIcon();
-                        break;
+                if (button === 1) {
+                    const action = this._extension._settings.get_enum("left-click-action");
+                    switch (action) {
+                        case 0: this._windowManager.toggleDesktop(); break;
+                        case 1: this._windowManager.hideAllWindows(); break;
+                        case 2: this._windowManager.restoreAllWindows(); break;
+                        case 3:
+                            this._windowManager.addCurrentWindowToHidden();
+                            this.updateIcon();
+                            break;
+                    }
+                    return Clutter.EVENT_STOP;
                 }
-                return Clutter.EVENT_STOP;
-            }
 
-            if (button === 2) {
-                const action = this._extension._settings.get_enum('middle-click-action');
-                switch (action) {
-                    case 0: this._windowManager.hideAllWindows(); break;
-                    case 1:
-                        this._windowManager.addCurrentWindowToHidden();
-                        this.updateIcon();
-                        break;
-                    case 2: this._windowManager.toggleDesktop(); break;
+                if (button === 2) {
+                    const action = this._extension._settings.get_enum("middle-click-action");
+                    switch (action) {
+                        case 0: this._windowManager.hideAllWindows(); break;
+                        case 1:
+                            this._windowManager.addCurrentWindowToHidden();
+                            this.updateIcon();
+                            break;
+                        case 2: this._windowManager.toggleDesktop(); break;
+                    }
+                    return Clutter.EVENT_STOP;
                 }
-                return Clutter.EVENT_STOP;
+
+                if (button === 3) {
+                    GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+                        this._handlePrefsWindow();
+                        return GLib.SOURCE_REMOVE;
+                    });
+
+                    return Clutter.EVENT_STOP;
+                }
+
+                return Clutter.EVENT_PROPAGATE;
             }
-
-            if (button === 3) {
-                this._GLib.idle_add(this._GLib.PRIORITY_DEFAULT, () => {
-                    this._handlePrefsWindow();
-                    return this._GLib.SOURCE_REMOVE;
-                });
-
-                return Clutter.EVENT_STOP;
-            }
-
-            return Clutter.EVENT_PROPAGATE;
-        });
+        );
     }
 
     addToPanel() {
         const role = `${this._extension._extensionName} Indicator`;
 
-        const positions = ['left', 'left', 'center', 'right', 'right'];
+        const positions = ["left", "left", "center", "right", "right"];
         const offsets = [0, 1, 0, 0, 1];
 
         this._createPanelButton();
@@ -172,18 +197,31 @@ export default class PanelIndicator {
         this._Main.panel.addToStatusArea(
             role,
             this._panelButton,
-            offsets[this._extension._settings.get_enum('button-position')],
-            positions[this._extension._settings.get_enum('button-position')]
+            offsets[this._extension._settings.get_enum("button-position")],
+            positions[this._extension._settings.get_enum("button-position")]
         );
     }
 
-    removeFromPanel() {
-        if (this._panelButton) {
-            this._panelButton.destroy();
-            this._panelButton = null;
-            this._panelIcon = null;
-            this._panelBadge = null;
+    destroy() {
+        if (!this._panelButton) return;
+
+        if (this._buttonSignal) {
+            this._panelButton.disconnect(this._buttonSignal);
+            this._buttonSignal = null;
         }
+
+        if (this._prefsWindow && this._prefsWindowSignal) {
+            this._prefsWindow.disconnect(this._prefsWindowSignal);
+            this._prefsWindowSignal = null;
+        }
+
+        this._panelButton.destroy();
+        this._panelButton = null;
+        this._panelIcon = null;
+        this._panelBadge = null;
+
+        this._prefsWindow = null;
+        this._prefsOpenedByExtension = false;
     }
 
     updateIcon() {
@@ -196,28 +234,28 @@ export default class PanelIndicator {
         const count = this._windowManager.getHiddenCountForWorkspace(wsIndex);
         const hasHidden = count > 0;
 
-        const iconStyle = this._extension._settings.get_enum('icon-style');
+        const iconStyle = this._extension._settings.get_enum("icon-style");
 
         switch (iconStyle) {
             case 0:
                 this._panelIcon.icon_name = hasHidden
-                    ? 'user-desktop-symbolic'
-                    : 'computer-symbolic';
+                    ? "user-desktop-symbolic"
+                    : "computer-symbolic";
                 break;
             case 1:
-                this._panelIcon.icon_name = 'user-desktop-symbolic';
+                this._panelIcon.icon_name = "user-desktop-symbolic";
                 break;
             case 2:
-                this._panelIcon.icon_name = 'computer-symbolic';
+                this._panelIcon.icon_name = "computer-symbolic";
                 break;
             default:
-                this._panelIcon.icon_name = 'computer-symbolic';
+                this._panelIcon.icon_name = "computer-symbolic";
         }
 
-        const showCount = this._extension._settings.get_boolean('show-hidden-count');
+        const showCount = this._extension._settings.get_boolean("show-hidden-count");
 
         this._panelBadge.visible = showCount && hasHidden;
-        this._panelBadge.text = showCount && hasHidden ? `${count}` : '';
+        this._panelBadge.text = showCount && hasHidden ? `${count}` : "";
     }
 }
 

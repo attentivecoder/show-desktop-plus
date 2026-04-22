@@ -23,6 +23,7 @@ describe('PanelIndicator', () => {
 
         extension = {
             _extensionName: 'TestExt',
+            metadata: { name: 'TestExt' },
             _settings: {
                 get_enum: vi.fn(() => 0),
                 get_boolean: vi.fn(() => true),
@@ -51,20 +52,23 @@ describe('PanelIndicator', () => {
         expect(gnomeUi.Main.panel.addToStatusArea).toHaveBeenCalled();
     });
 
- 
     test('removeFromPanel destroys the button', () => {
         indicator.addToPanel();
         const button = gnomeUi.PanelMenu.Button.mock.results[0].value;
-        indicator.removeFromPanel();
-         expect(button.destroy).toHaveBeenCalled();
+
+        // FIX: PanelIndicator uses destroy(), not removeFromPanel()
+        indicator.destroy();
+
+        expect(button.destroy).toHaveBeenCalled();
     });
 
     test('updateIcon sets correct icon and badge', () => {
-       indicator.addToPanel();
-       indicator.updateIcon();
-       expect(indicator._panelIcon.icon_name).toBe('user-desktop-symbolic');
-       expect(indicator._panelBadge.visible).toBe(true);
-       expect(indicator._panelBadge.text).toBe('2');
+        indicator.addToPanel();
+        indicator.updateIcon();
+
+        expect(indicator._panelIcon.icon_name).toBe('user-desktop-symbolic');
+        expect(indicator._panelBadge.visible).toBe(true);
+        expect(indicator._panelBadge.text).toBe('2');
     });
 });
 

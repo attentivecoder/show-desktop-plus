@@ -1,6 +1,7 @@
 import { vi } from 'vitest';
 import { Meta as MetaBase } from './meta.js';
 import { createMockWorkspace } from './workspace.js';
+import { createWindow } from '../../helpers/factories.js';
 
 export function createMockGnomeAPI(workspacesOrWindows) {
     const first = workspacesOrWindows?.[0];
@@ -66,8 +67,15 @@ export function createMockGnomeAPI(workspacesOrWindows) {
             return 555;
         }),
 
-        emit: function (signal, ...args) {
-            const win = args[0];
+        emit: function (signal, win, ...args) {
+            // ⭐ Ensure window is always a proper mock window
+            if (win && typeof win.connect !== 'function') {
+                win = createWindow(
+                    win._id ?? Math.random(),
+                    win._monitor ?? 0,
+                    win
+                );
+            }
 
             if (signal === 'window-created' && win) {
                 let ws =
@@ -98,11 +106,17 @@ export function createMockGnomeAPI(workspacesOrWindows) {
             }
 
             if (this._signals[signal]) {
-                this._signals[signal](this, ...args);
+                this._signals[signal](this, win, ...args);
             }
         },
 
-        get_tab_list: vi.fn(() => []),
+        get_tab_list: vi.fn((...args) => {
+            const list = display._tabListOverride?.(...args) ?? [];
+            return list.map(win => {
+                if (typeof win.connect === 'function') return win;
+                return createWindow(win._id ?? Math.random(), win._monitor ?? 0, win);
+            });
+        }),
     };
 
     // -----------------------------
@@ -134,6 +148,10 @@ export function createMockGnomeAPI(workspacesOrWindows) {
                 return 1;
             };
 
+            this.disconnect = vi.fn((id) => {
+                delete this._signals[id];
+            });
+
             this.emit = (signal, ...args) => {
                 if (this._signals[signal]) {
                     this._signals[signal](this, ...args);
@@ -144,6 +162,7 @@ export function createMockGnomeAPI(workspacesOrWindows) {
             this.clear_actions = vi.fn();
             this.destroy = vi.fn();
             this.reactive = false;
+            this.tooltip_text = '';
         }),
     };
 
@@ -171,6 +190,7 @@ export function createMockGnomeAPI(workspacesOrWindows) {
         Icon: vi.fn(function Icon(props = {}) {
             this.icon_name = props.icon_name;
             this.style_class = props.style_class;
+            this.text = '';
         }),
 
         Label: vi.fn(function Label(props = {}) {
@@ -188,6 +208,12 @@ export function createMockGnomeAPI(workspacesOrWindows) {
         BinLayout: vi.fn(function BinLayout() {}),
         EVENT_STOP: 1,
         EVENT_PROPAGATE: 2,
+
+        ModifierType: {
+            SHIFT_MASK: 1 << 0,
+            CONTROL_MASK: 1 << 1,
+            MOD1_MASK: 1 << 2, // Alt
+        },
     };
 
     // -----------------------------
@@ -210,6 +236,9 @@ export function createMockGnomeAPI(workspacesOrWindows) {
         KeyBindingFlags: {
             NONE: 0,
             IGNORE_AUTOREPEAT: 1,
+        },
+        TabList: {
+            NORMAL_ALL: 0,
         },
     };
 

@@ -8,6 +8,10 @@ export async function loadGnomeUI() {
     const Main = await import('resource:///org/gnome/shell/ui/main.js');
     const PanelMenu = await import('resource:///org/gnome/shell/ui/panelMenu.js');
 
+    const display = global.get_display();
+    const workspace_manager = global.get_workspace_manager();
+    const get_current_time = global.get_current_time;
+
     return {
         St,
         Clutter,
@@ -16,5 +20,9 @@ export async function loadGnomeUI() {
         Shell,
         Main,
         PanelMenu,
+        display,
+        workspace_manager,
+        get_current_time,
     };
 }
+

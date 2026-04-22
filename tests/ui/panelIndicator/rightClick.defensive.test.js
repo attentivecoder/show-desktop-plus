@@ -37,6 +37,12 @@ describe('PanelIndicator – right-click defensive behavior', () => {
         indicator._createPanelButton();
     });
 
+    function withWindow(win) {
+        win.connect = vi.fn(() => 1);
+        win.disconnect = vi.fn();
+        return win;
+    }
+
     it('opens preferences when no prefs window exists', () => {
         gnome.display.get_tab_list.mockReturnValue([]);
 
@@ -46,14 +52,14 @@ describe('PanelIndicator – right-click defensive behavior', () => {
     });
 
     it('focuses existing prefs window (get_title)', () => {
-        const prefsWin = {
+        const prefsWin = withWindow({
             title: 'show-desktop-plus Preferences',
             get_title: () => 'show-desktop-plus Preferences',
             get_wm_class: () => 'org.gnome.Shell.Extensions',
             activate: vi.fn(),
             get_workspace: () => gnome.workspace_manager.get_active_workspace(),
             change_workspace: vi.fn(),
-        };
+        });
 
         gnome.display.get_tab_list.mockReturnValue([prefsWin]);
 
@@ -63,13 +69,13 @@ describe('PanelIndicator – right-click defensive behavior', () => {
     });
 
     it('focuses existing prefs window (.title)', () => {
-        const prefsWin = {
+        const prefsWin = withWindow({
             title: 'show-desktop-plus Preferences',
             get_wm_class: () => 'org.gnome.Shell.Extensions',
             activate: vi.fn(),
             get_workspace: () => gnome.workspace_manager.get_active_workspace(),
             change_workspace: vi.fn(),
-        };
+        });
 
         gnome.display.get_tab_list.mockReturnValue([prefsWin]);
 
@@ -79,13 +85,13 @@ describe('PanelIndicator – right-click defensive behavior', () => {
     });
 
     it('falls back to openPreferences() if activate throws', () => {
-        const prefsWin = {
+        const prefsWin = withWindow({
             get_title: () => 'show-desktop-plus Preferences',
             get_wm_class: () => 'org.gnome.Shell.Extensions',
             activate: () => { throw new Error('boom') },
             get_workspace: () => gnome.workspace_manager.get_active_workspace(),
             change_workspace: vi.fn(),
-        };
+        });
 
         gnome.display.get_tab_list.mockReturnValue([prefsWin]);
 
@@ -94,3 +100,4 @@ describe('PanelIndicator – right-click defensive behavior', () => {
         expect(mockExtension.openPreferences).toHaveBeenCalled();
     });
 });
+

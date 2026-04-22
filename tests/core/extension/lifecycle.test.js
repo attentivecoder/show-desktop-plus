@@ -1,57 +1,106 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ExtensionController from '../../../extensionController.js';
 
+// ------------------------------------------------------------
+// Vitest‑safe mocks (NO top-level variables used inside factories)
+// ------------------------------------------------------------
+
+// ---- gnomeUI.js ----
 vi.mock('../../../core/gnomeUI.js', () => ({
     loadGnomeUI: vi.fn(async () => ({
         Meta: {},
         Shell: {},
-        Main: { wm: { addKeybinding: vi.fn(), removeKeybinding: vi.fn() } },
+        Main: {
+            wm: {
+                addKeybinding: vi.fn(),
+                removeKeybinding: vi.fn(),
+            },
+            panel: {
+                addToStatusArea: vi.fn(),
+            },
+        },
+        St: {
+            Widget: vi.fn(),
+            Icon: vi.fn(),
+            Label: vi.fn(),
+        },
+        Clutter: {
+            BinLayout: vi.fn(),
+            EVENT_STOP: 1,
+            EVENT_PROPAGATE: 2,
+        },
+        GLib: {
+            PRIORITY_DEFAULT: 0,
+            SOURCE_REMOVE: 0,
+            idle_add: vi.fn((_, cb) => {
+                cb();
+                return 0;
+            }),
+        },
     })),
 }));
 
-const mockAddToPanel = vi.fn();
-const mockRemoveFromPanel = vi.fn();
-const mockUpdateIcon = vi.fn();
+// ---- panelIndicator.js ----
+vi.mock('../../../core/panelIndicator.js', () => {
+    const addToPanel = vi.fn();
+    const destroy = vi.fn();
+    const updateIcon = vi.fn();
 
-vi.mock('../../../core/panelIndicator.js', () => ({
-    default: vi.fn().mockImplementation(() => ({
-        addToPanel: mockAddToPanel,
-        removeFromPanel: mockRemoveFromPanel,
-        updateIcon: mockUpdateIcon,
-    })),
-}));
+    return {
+        default: vi.fn().mockImplementation(() => ({
+            addToPanel,
+            destroy,
+            updateIcon,
+        })),
+        __mocks: { addToPanel, destroy, updateIcon },
+    };
+});
 
-const mockHotkeyEnable = vi.fn();
-const mockHotkeyDisable = vi.fn();
+// ---- hotkeyManager.js ----
+vi.mock('../../../core/hotkeyManager.js', () => {
+    const enable = vi.fn();
+    const disable = vi.fn();
 
-vi.mock('../../../core/hotkeyManager.js', () => ({
-    default: vi.fn().mockImplementation(() => ({
-        enable: mockHotkeyEnable,
-        disable: mockHotkeyDisable,
-    })),
-}));
+    return {
+        default: vi.fn().mockImplementation(() => ({
+            enable,
+            disable,
+        })),
+        __mocks: { enable, disable },
+    };
+});
 
-const mockStateClear = vi.fn();
+// ---- stateStore.js ----
+vi.mock('../../../core/stateStore.js', () => {
+    const clear = vi.fn();
 
-vi.mock('../../../core/stateStore.js', () => ({
-    default: vi.fn().mockImplementation(() => ({
-        clear: mockStateClear,
-    })),
-}));
+    return {
+        default: vi.fn().mockImplementation(() => ({
+            clear,
+        })),
+        __mocks: { clear },
+    };
+});
 
+// ---- windowManager.js ----
 vi.mock('../../../core/windowManager.js', () => ({
     default: vi.fn().mockImplementation(() => ({})),
 }));
 
+// ------------------------------------------------------------
+// Test Suite
+// ------------------------------------------------------------
+
 describe('ExtensionController lifecycle', () => {
-    let mockExtension;
     let controller;
+    let mockExtension;
 
     beforeEach(() => {
         global.workspace_manager = {
             connect: vi.fn(() => 999),
             disconnect: vi.fn(),
         };
+        global.get_workspace_manager = () => global.workspace_manager;
 
         mockExtension = {
             _extensionName: 'show-desktop-plus',
@@ -63,42 +112,63 @@ describe('ExtensionController lifecycle', () => {
             },
         };
 
-        mockAddToPanel.mockReset();
-        mockRemoveFromPanel.mockReset();
-        mockUpdateIcon.mockReset();
-        mockHotkeyEnable.mockReset();
-        mockHotkeyDisable.mockReset();
-        mockStateClear.mockReset();
-        mockExtension._settings.connect.mockReset();
-        mockExtension._settings.disconnect.mockReset();
-
         controller = new ExtensionController(mockExtension);
     });
 
-
     it('enable() wires everything correctly', async () => {
+        const panelMocks = vi.mocked(
+            await import('../../../core/panelIndicator.js')
+        ).__mocks;
+
+        const hotkeyMocks = vi.mocked(
+            await import('../../../core/hotkeyManager.js')
+        ).__mocks;
+
+        const stateMocks = vi.mocked(
+            await import('../../../core/stateStore.js')
+        ).__mocks;
+
         await controller.enable();
 
-        expect(mockAddToPanel).toHaveBeenCalledTimes(1);
-        expect(mockHotkeyEnable).toHaveBeenCalledTimes(1);
-        expect(mockUpdateIcon).toHaveBeenCalledTimes(1);
+        expect(panelMocks.addToPanel).toHaveBeenCalledTimes(1);
+        expect(hotkeyMocks.enable).toHaveBeenCalledTimes(1);
+        expect(panelMocks.updateIcon).toHaveBeenCalledTimes(1);
 
         expect(global.workspace_manager.connect).toHaveBeenCalledTimes(1);
         expect(mockExtension._settings.connect).toHaveBeenCalledTimes(4);
     });
 
     it('disable() unwires everything correctly', async () => {
+        const panelMocks = vi.mocked(
+            await import('../../../core/panelIndicator.js')
+        ).__mocks;
+
+        const hotkeyMocks = vi.mocked(
+            await import('../../../core/hotkeyManager.js')
+        ).__mocks;
+
+        const stateMocks = vi.mocked(
+            await import('../../../core/stateStore.js')
+        ).__mocks;
+
         await controller.enable();
 
-        const id = global.workspace_manager.connect.mock.results[0].value; // 999
+        const id = global.workspace_manager.connect.mock.results[0].value;
 
         controller.disable();
 
         expect(global.workspace_manager.disconnect).toHaveBeenCalledWith(id);
         expect(mockExtension._settings.disconnect).toHaveBeenCalledTimes(4);
-        expect(mockHotkeyDisable).toHaveBeenCalledTimes(1);
-        expect(mockRemoveFromPanel).toHaveBeenCalledTimes(1);
-        expect(mockStateClear).toHaveBeenCalledTimes(1);
+        expect(hotkeyMocks.disable).toHaveBeenCalledTimes(1);
+        expect(panelMocks.destroy).toHaveBeenCalledTimes(1);
+        expect(stateMocks.clear).toHaveBeenCalledTimes(1);
+    });
+    
+    it('disable() is safe when called before enable()', () => {
+        const fresh = new ExtensionController(mockExtension);
+
+        expect(() => fresh.disable()).not.toThrow();
+        expect(global.workspace_manager.disconnect).not.toHaveBeenCalled();
     });
 });
 

@@ -13,19 +13,27 @@ export function createMockWindow(id, monitor = 0, props = {}) {
         get_monitor() { return this._monitor; },
         located_on_workspace() { return true; },
 
-        _signals: {},
+        _signals: new Map(),
+        _nextSignalId: 1,
 
-        connect: vi.fn((signal, handler) => {
-            win._signals[signal] = handler;
-            return id * 1000;
-        }),
+        connect(signal, handler) {
+            const id = this._nextSignalId++;
+            this._signals.set(id, { signal, handler });
+            return id;
+        },
 
-        disconnect: vi.fn(),
+        disconnect(id) {
+            this._signals.delete(id);
+        },
 
         emit(signal, ...args) {
-            if (win._signals[signal]) {
-                win._signals[signal](win, ...args);
+            for (const { signal: s, handler } of this._signals.values()) {
+                if (s === signal) handler(win, ...args);
             }
+        },
+        
+        get_window_type() {
+            return this.window_type;
         },
 
         minimize: vi.fn(() => {
@@ -44,19 +52,27 @@ export function createMockWindow(id, monitor = 0, props = {}) {
         }),
 
         destroy: vi.fn(() => {
-    win.emit('unmanaged');
+            win.emit('unmanaged');
 
-    const ws = win._workspaceRef;
-    if (ws) {
-        ws.windows = ws.windows.filter(w => w !== win);
-    }
+            const ws = win._workspaceRef;
+            if (ws) {
+                ws.windows = ws.windows.filter(w => w !== win);
+            }
 
-    win.workspace = -1;
-}),
+            win.workspace = -1;
+        }),
 
         activate: vi.fn(),
+
         get_workspace: () => ({ index: () => win.workspace }),
-        title: props.title ?? `Window ${id}`,
+
+        get_title() {
+            return props.title ?? `Window ${id}`;
+        },
+
+        get_wm_class() {
+            return props.wmClass ?? "org.gnome.Shell.Extensions";
+        },
     };
 
     return win;
