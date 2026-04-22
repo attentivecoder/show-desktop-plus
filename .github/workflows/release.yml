@@ -33,6 +33,7 @@ jobs:
           zip -r show-desktop-plus@attentivecoder.zip \
             extension.js \
             prefs.js \
+            prefs.ui \
             metadata.json \
             core \
             prefs \
