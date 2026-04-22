@@ -69,6 +69,19 @@ Originally based on the “Show Desktop Applet” extension — now heavily rewr
 - `current-monitor-only` – limit window hiding to the active monitor
 
 ## Installation
+### 📦 Recommended (stable release)
+
+Download the latest `.zip` from the Releases page:
+
+👉 [Download latest release](https://github.com/attentivecoder/show-desktop-plus/releases/latest)
+
+Then install it with:
+
+```bash
+gnome-extensions install show-desktop-plus@attentivecoder.zip
+gnome-extensions enable show-desktop-plus@attentivecoder
+```
+
 ### From source (development)
 Clone into your local GNOME extensions directory:
 
@@ -199,6 +212,26 @@ journalctl -f /usr/bin/gnome-shell
 ```bash
 gsettings list-keys org.gnome.shell.extensions.show-desktop-plus
 gsettings get org.gnome.shell.extensions.show-desktop-plus button-position
+```
+
+## 🏷️ Releases
+
+> Maintainer notes for creating releases.
+
+This project uses Git tags to trigger automated releases via GitHub Actions.
+
+### Create a release tag
+
+```bash
+git tag v0.1
+git push origin v0.1
+```
+
+### ➖ Delete a tag
+
+```bash
+git tag -d v0.1
+git push origin :refs/tags/v0.1
 ```
 
 ## ❤️ Credits
