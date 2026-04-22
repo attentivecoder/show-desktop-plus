@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  release:
+    needs: test-build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build zip
+        run: |
+          zip -r show-desktop-plus@attentivecoder.zip \
+            extension.js \
+            prefs.js \
+            metadata.json \
+            core \
+            ui \
+            schemas \
+            stylesheet.css \
+            -x "schemas/gschemas.compiled"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: show-desktop-plus@attentivecoder.zip
