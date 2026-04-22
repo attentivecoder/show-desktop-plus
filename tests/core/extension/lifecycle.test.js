@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import ExtensionController from '../../../extensionController.js';
+import ExtensionController from '../../../core/extensionController.js';
 
 // ------------------------------------------------------------
 // Vitest‑safe mocks (NO top-level variables used inside factories)

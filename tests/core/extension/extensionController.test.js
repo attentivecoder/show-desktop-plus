@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import ExtensionController from '../../../extensionController.js';
+import ExtensionController from '../../../core/extensionController.js';
 import { createMockGnomeAPI } from '../../mocks/gnome/gnome.js';
 
 vi.mock('../../../core/gnomeUI.js', () => ({

@@ -1,8 +1,8 @@
-import StateStore from './core/stateStore.js';
-import WindowManager from './core/windowManager.js';
-import PanelIndicator from './core/panelIndicator.js';
-import HotkeyManager from './core/hotkeyManager.js';
-import { loadGnomeUI } from './core/gnomeUI.js';
+import StateStore from './stateStore.js';
+import WindowManager from './windowManager.js';
+import PanelIndicator from './panelIndicator.js';
+import HotkeyManager from './hotkeyManager.js';
+import { loadGnomeUI } from './gnomeUI.js';
 
 export default class ExtensionController {
     constructor(extension) {

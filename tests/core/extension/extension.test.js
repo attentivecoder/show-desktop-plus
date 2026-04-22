@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { createMockGnomeAPI } from '../../mocks/gnome/gnome.js';
 import ShowDesktopPlus from '../../../extension.js';
-import ExtensionController from '../../../extensionController.js';
+import ExtensionController from '../../../core/extensionController.js';
 
 vi.mock('resource:///org/gnome/shell/extensions/extension.js', () => {
     class MockExtension {
@@ -19,7 +19,7 @@ vi.mock('../../../core/gnomeUI.js', () => ({
     loadGnomeUI: vi.fn(async () => createMockGnomeAPI([]))
 }));
 
-vi.mock('../../../extensionController.js', () => {
+vi.mock('../../../core/extensionController.js', () => {
     return {
         default: vi.fn().mockImplementation(() => ({
             enable: vi.fn(),

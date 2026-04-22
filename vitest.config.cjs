@@ -11,8 +11,5 @@ module.exports = defineConfig({
             '**/dist/**',
             '**/build/**'
         ]
-    },
-
-  
+    },  
 });
-

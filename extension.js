@@ -1,5 +1,5 @@
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
-import ExtensionController from './extensionController.js';
+import ExtensionController from './core/extensionController.js';
 
 export default class ShowDesktopPlus extends Extension {
     enable() {
