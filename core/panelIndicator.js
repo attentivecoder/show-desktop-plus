@@ -3,6 +3,7 @@ const LeftClickAction = {
     HIDE_ALL: 1,
     RESTORE_ALL: 2,
     HIDE_CURRENT: 3,
+    DO_NOTHING: 4,
 };
 
 const MiddleClickAction = {
@@ -29,6 +30,11 @@ export default class PanelIndicator {
         this._Meta = gnomeUI.Meta;
         this._PanelMenu = gnomeUI.PanelMenu;
         this._Main = gnomeUI.Main;
+
+        this._display = gnomeUI.display;
+        
+        this._workspace_manager = gnomeUI.workspace_manager;
+        this._get_current_time = gnomeUI.get_current_time;
 
         this._panelButton = null;
         this._panelIcon = null;
@@ -59,7 +65,7 @@ export default class PanelIndicator {
     }
 
     _findPrefsWindow() {
-        const windows = global.display.get_tab_list(
+        const windows = this._display.get_tab_list(
             this._Meta.TabList.NORMAL_ALL,
             null
         );
@@ -102,6 +108,7 @@ export default class PanelIndicator {
                 this._windowManager.addCurrentWindowToHidden();
                 this.updateIcon();
             },
+            [LeftClickAction.DO_NOTHING]: () => {},
         };
 
         actions[action]?.();
@@ -122,7 +129,7 @@ export default class PanelIndicator {
 
     _handlePrefsWindow() {
         const prefsWin = this._findPrefsWindow();
-        const currentWs = global.workspace_manager.get_active_workspace();
+        const currentWs = this._workspace_manager.get_active_workspace();
 
         if (!prefsWin) {
             this._prefsOpenedByExtension = true;
@@ -138,7 +145,7 @@ export default class PanelIndicator {
                     prefsWin.change_workspace(currentWs);
             }
 
-            prefsWin.activate(global.get_current_time());
+            prefsWin.activate(this._get_current_time());
 
         } catch (err) {
             if (typeof logError === "function") logError(err);
@@ -156,7 +163,7 @@ export default class PanelIndicator {
 
         this._panelButton = new PanelMenu.Button(
             0.0,
-            `${this._extension._extensionName}-indicator`,
+            `${this._extension.metadata.name}-indicator`,
             false
         );
 
@@ -215,7 +222,7 @@ export default class PanelIndicator {
     }
 
     addToPanel() {
-        const role = `${this._extension._extensionName} Indicator`;
+        const role = `${this._extension.metadata.name} Indicator`;
 
         const positions = ["left", "left", "center", "right", "right"];
         const offsets = [0, 1, 0, 0, 1];
@@ -256,7 +263,7 @@ export default class PanelIndicator {
         if (!this._panelIcon || !this._panelBadge || !this._extension)
             return;
 
-        const workspace = global.workspace_manager.get_active_workspace();
+        const workspace = this._workspace_manager.get_active_workspace();
         const wsIndex = workspace.index();
 
         const count = this._windowManager.getHiddenCountForWorkspace(wsIndex);

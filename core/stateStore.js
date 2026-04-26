@@ -18,12 +18,30 @@ export default class StateStore {
     clear() {
         this._storedStateByWorkspace.clear();
     }
+    
+    get size() {
+        return this._storedStateByWorkspace.size;
+    }
+
 
     entries() {
         return this._storedStateByWorkspace.entries();
     }
+    
+    forEach(callback) {
+        this._storedStateByWorkspace.forEach(callback);
+    }
 
     hasWorkspace(wsIndex) {
         return this._storedStateByWorkspace.has(wsIndex);
+    }
+    
+    getOrCreateWorkspaceMap(wsIndex) {
+        let map = this._storedStateByWorkspace.get(wsIndex);
+        if (!map) {
+            map = new Map();
+            this._storedStateByWorkspace.set(wsIndex, map);
+        }
+        return map;
     }
 }

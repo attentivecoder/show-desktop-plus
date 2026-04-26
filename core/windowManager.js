@@ -99,7 +99,8 @@ export default class WindowManager {
     }
 
     _cleanWorkspaceMap(map) {
-        for (const [key, list] of map.entries()) {
+        for (const key of [...map.keys()]) {
+            const list = map.get(key);
             const filtered = list.filter(id => this._resolveWindowById(id));
             if (filtered.length > 0) map.set(key, filtered);
             else map.delete(key);
@@ -147,11 +148,7 @@ export default class WindowManager {
         const id = this._getWindowId(focusWin);
         if (!id) return;
 
-        let map = this._stateStore.getWorkspaceMap(wsIndex);
-        if (!map) {
-            map = new Map();
-            this._stateStore.setWorkspaceMap(wsIndex, map);
-        }
+        const map = this._stateStore.getOrCreateWorkspaceMap(wsIndex);
 
         const ignoreExternal =
             this._extension._settings.get_boolean('current-monitor-only');

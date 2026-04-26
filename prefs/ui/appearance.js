@@ -1,16 +1,10 @@
-import { bindComboRow } from '../util/bindings.js';
-import Gio from 'gi://Gio';
+import { bindComboRow, bindSwitchRow } from '../util/bindings.js';
 
 export function initAppearance(builder, settings) {
     const iconStyleRow = builder.get_object('iconStyle_row');
     const showCountRow = builder.get_object('showHiddenCount_row');
 
     bindComboRow(settings, 'icon-style', iconStyleRow);
-
-    settings.bind(
-        'show-hidden-count',
-        showCountRow,
-        'active',
-        Gio.SettingsBindFlags.DEFAULT
-    );
+    bindSwitchRow(settings, 'show-hidden-count', showCountRow);
 }
+

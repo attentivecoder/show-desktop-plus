@@ -47,7 +47,7 @@ export default class ExtensionController {
             this._panelIndicator.addToPanel();
             this._hotkeyManager.enable();
 
-            this._workspaceSignal = global.get_workspace_manager().connect(
+            this._workspaceSignal = this._gnomeUI.workspace_manager.connect(
                 // Stryker disable next-line StringLiteral
                 'active-workspace-changed',
                 () => this._panelIndicator.updateIcon()
@@ -61,7 +61,7 @@ export default class ExtensionController {
     disable() {
         // Stryker disable next-line ConditionalExpression
         if (this._workspaceSignal) {
-            global.workspace_manager.disconnect(this._workspaceSignal);
+            this._gnomeUI.workspace_manager.disconnect(this._workspaceSignal);
             this._workspaceSignal = null;
         }
 

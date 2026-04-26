@@ -1,12 +1,7 @@
-import Gio from 'gi://Gio';
+import { bindSwitchRow } from '../util/bindings.js';
 
 export function initShortcuts(builder, settings) {
     const hotkeyRow = builder.get_object('useHotkey_row');
-
-    settings.bind(
-        'enable-hotkey',
-        hotkeyRow,
-        'active',
-        Gio.SettingsBindFlags.DEFAULT
-    );
+    bindSwitchRow(settings, 'enable-hotkey', hotkeyRow);
 }
+
