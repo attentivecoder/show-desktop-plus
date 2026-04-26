@@ -47,16 +47,14 @@ export default class PanelIndicator {
     _safeOpenPreferences() {
         try {
             const result = this._extension.openPreferences();
-            if (result && typeof result.catch === "function") {
-                result.catch(err => {
-                    if (typeof logError === "function") logError(err);
-                    else console.error(err);
-                });
-            }
-        } 
-        // Stryker disable next-line BlockStatement
-        catch (err) {
-            // Stryker disable next-line BooleanLiteral, StringLiteral, ConditionalExpression, EqualityOperator
+
+            // Normalize the return value so the catch attaches immediately
+            Promise.resolve(result).catch(err => {
+                if (typeof logError === "function") logError(err);
+                else console.error(err);
+            });
+
+        } catch (err) {
             if (typeof logError === "function") logError(err);
             else console.error(err);
         }
