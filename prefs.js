@@ -18,28 +18,29 @@ export default class extends ExtensionPreferences {
         builder.set_translation_domain(this.metadata['gettext-domain']);
         builder.add_from_file(this.dir.get_child('prefs.ui').get_path());
 
-        const uiDir = this.dir.get_child('prefs/ui');
+        const uiDir = this.dir.get_child('prefs').get_child('ui');
 
         builder.add_from_file(uiDir.get_child('panel.ui').get_path());
         builder.add_from_file(uiDir.get_child('controls.ui').get_path());
         builder.add_from_file(uiDir.get_child('shortcuts.ui').get_path());
         builder.add_from_file(uiDir.get_child('appearance.ui').get_path());
         builder.add_from_file(uiDir.get_child('behavior.ui').get_path());
-
+        
+        
         builder.get_object('panel_section')
-            .add(builder.get_object('panel_group'));
+    .add(builder.get_object('panel_group'));
 
-        builder.get_object('controls_section')
-            .add(builder.get_object('controls_group'));
+builder.get_object('controls_section')
+    .add(builder.get_object('controls_group'));
 
-        builder.get_object('shortcuts_section')
-            .add(builder.get_object('shortcuts_group'));
+builder.get_object('shortcuts_section')
+    .add(builder.get_object('shortcuts_group'));
 
-        builder.get_object('appearance_section')
-            .add(builder.get_object('appearance_group'));
+builder.get_object('appearance_section')
+    .add(builder.get_object('appearance_group'));
 
-        builder.get_object('behavior_section')
-            .add(builder.get_object('behavior_group'));
+builder.get_object('behavior_section')
+    .add(builder.get_object('behavior_group'));
 
         initPanel(builder, settings);
         initControls(builder, settings);

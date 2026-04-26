@@ -63,18 +63,15 @@ export default class PanelIndicator {
     }
 
     _findPrefsWindow() {
-        const windows = this._display.get_tab_list(
-            this._Meta.TabList.NORMAL_ALL,
-            null
-        );
-
         const extName = this._extension.metadata.name;
 
+        const windows = global.get_window_actors()
+            .map(actor => actor.meta_window)
+            .filter(w => w);
+
         return windows.find(w => {
-            // Stryker disable next-line StringLiteral
-            const title = w.get_title?.() || w.title || "";
-            // Stryker disable next-line StringLiteral
-            const wmClass = w.get_wm_class?.() || "";
+            const title = w.get_title() || "";
+            const wmClass = w.get_wm_class() || "";
             return (
                 wmClass === "org.gnome.Shell.Extensions" &&
                 title.includes(extName)
@@ -125,33 +122,53 @@ export default class PanelIndicator {
         actions[action]?.();
     }
 
-    _handlePrefsWindow() {
-        const prefsWin = this._findPrefsWindow();
-        const currentWs = this._workspace_manager.get_active_workspace();
-
-        if (!prefsWin) {
-            this._prefsOpenedByExtension = true;
-            this._safeOpenPreferences();
+    async _handlePrefsWindow() {
+        if (this._prefsHandling)
             return;
-        }
 
-        this._trackPrefsWindow(prefsWin);
+        this._prefsHandling = true;
 
         try {
+            let prefsWin = this._findPrefsWindow();
+            const currentWs = this._workspace_manager.get_active_workspace();
+
+            if (!prefsWin) {
+                this._prefsOpenedByExtension = true;
+                this._safeOpenPreferences();
+
+                // Wait for GNOME Shell to finish creating the window
+                await new Promise(resolve => {
+                    this._GLib.timeout_add(
+                        this._GLib.PRIORITY_DEFAULT,
+                        50,
+                        () => { resolve(); return this._GLib.SOURCE_REMOVE; }
+                    );
+                });
+
+                prefsWin = this._findPrefsWindow();
+                if (!prefsWin)
+                    return; // avoid crash
+            }
+
+            this._trackPrefsWindow(prefsWin);
+
             if (this._prefsOpenedByExtension) {
                 if (prefsWin.get_workspace() !== currentWs)
                     prefsWin.change_workspace(currentWs);
             }
 
-            prefsWin.activate(this._get_current_time());
+            prefsWin.activate(global.get_current_time());
 
         } catch (err) {
             if (typeof logError === "function") logError(err);
             else console.error(err);
 
-            this._safeOpenPreferences();
+        } finally {
+            this._prefsHandling = false;
         }
     }
+
+
 
     _createPanelButton() {
         if (this._panelButton) return;
@@ -160,7 +177,7 @@ export default class PanelIndicator {
         const Clutter = this._Clutter;
         const GLib = this._GLib;
         const PanelMenu = this._PanelMenu;
-
+        
         this._panelButton = new PanelMenu.Button(
             0.0,
             `${this._extension._extensionName}-indicator`,

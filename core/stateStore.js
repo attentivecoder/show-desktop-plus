@@ -44,4 +44,19 @@ export default class StateStore {
         }
         return map;
     }
+    
+    deleteWindowId(id) {
+        for (const [wsIndex, map] of this._storedStateByWorkspace) {
+            for (const [key, list] of map) {
+                const filtered = list.filter(wid => wid !== id);
+                if (filtered.length > 0)
+                    map.set(key, filtered);
+                else
+                    map.delete(key);
+            }
+
+            if (map.size === 0)
+                this._storedStateByWorkspace.delete(wsIndex);
+        }
+    }
 }

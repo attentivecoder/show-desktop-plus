@@ -121,20 +121,9 @@ export default class WindowManager {
 
     _removeWindowFromState(win) {
         const id = this._getWindowId(win);
+        if (!id) return;
 
-        for (const [wsIndex, map] of this._stateStore.entries()) {
-            for (const [key, list] of map.entries()) {
-                const filtered = list.filter(wid => wid !== id);
-
-                if (filtered.length > 0)
-                    map.set(key, filtered);
-                else
-                    map.delete(key);
-            }
-
-            if (map.size === 0)
-                this._stateStore.deleteWorkspace(wsIndex);
-        }
+        this._stateStore.deleteWindowId(id);
     }
 
     addCurrentWindowToHidden() {
