@@ -10,7 +10,8 @@ export async function loadGnomeUI() {
 
     const display = global.get_display();
     const workspace_manager = global.get_workspace_manager();
-    const get_current_time = global.get_current_time;
+    const get_current_time = global.get_current_time.bind(global);
+    const get_window_actors = global.get_window_actors.bind(global);
 
     return {
         St,
@@ -23,6 +24,7 @@ export async function loadGnomeUI() {
         display,
         workspace_manager,
         get_current_time,
+        get_window_actors,
     }
 }
 

@@ -32,6 +32,7 @@ export default class PanelIndicator {
         this._Main = gnomeUI.Main;
         this._display = gnomeUI.display;        
         this._workspace_manager = gnomeUI.workspace_manager;
+        this._get_window_actors = gnomeUI.get_window_actors;
         this._get_current_time = gnomeUI.get_current_time;
 
         this._panelButton = null;
@@ -63,7 +64,7 @@ export default class PanelIndicator {
     _findPrefsWindow() {
         const extName = this._extension.metadata.name;
 
-        const windows = global.get_window_actors()
+        const windows = this._get_window_actors()
             .map(actor => actor.meta_window)
             .filter(w => w);
 
@@ -155,7 +156,7 @@ export default class PanelIndicator {
                     prefsWin.change_workspace(currentWs);
             }
 
-            prefsWin.activate(global.get_current_time());
+            prefsWin.activate(this._get_current_time());
 
         } catch (err) {
             if (typeof logError === "function") logError(err);
