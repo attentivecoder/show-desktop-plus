@@ -23,6 +23,6 @@ export async function loadGnomeUI() {
         display,
         workspace_manager,
         get_current_time,
-    };
+    }
 }
 

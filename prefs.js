@@ -51,7 +51,7 @@ export default class extends ExtensionPreferences {
         page.set_margin_top(12);
         page.set_margin_bottom(12);
 
-        window.set_child(page);
+        window.add(page);
     }
 }
 

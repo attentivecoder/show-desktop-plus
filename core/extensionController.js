@@ -55,8 +55,7 @@ export default class ExtensionController {
 
             this._connectSettings();
             this._panelIndicator.updateIcon();
-    } 
-    
+    }
 
     disable() {
         // Stryker disable next-line ConditionalExpression
@@ -69,8 +68,7 @@ export default class ExtensionController {
             this._extension._settings.disconnect(id);
         }
         // Stryker disable next-line ArrayDeclaration
-        this._settingsSignals = [];
-        
+        this._settingsSignals = [];        
 
         this._hotkeyManager?.disable();
         this._hotkeyManager = null;

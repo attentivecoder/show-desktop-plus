@@ -3,7 +3,9 @@ import ExtensionController from './core/extensionController.js';
 
 export default class ShowDesktopPlus extends Extension {
     enable() {
+        this._extensionName = this.metadata.name || 'Show Desktop Plus';
         this._settings = this.getSettings();
+
         this._controller = new ExtensionController(this);
         this._controller.enable();
     }

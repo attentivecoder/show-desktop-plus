@@ -30,9 +30,7 @@ export default class PanelIndicator {
         this._Meta = gnomeUI.Meta;
         this._PanelMenu = gnomeUI.PanelMenu;
         this._Main = gnomeUI.Main;
-
-        this._display = gnomeUI.display;
-        
+        this._display = gnomeUI.display;        
         this._workspace_manager = gnomeUI.workspace_manager;
         this._get_current_time = gnomeUI.get_current_time;
 
@@ -113,7 +111,7 @@ export default class PanelIndicator {
 
         actions[action]?.();
     }
-
+    
     _handleMiddleClick(action) {
         const actions = {
             [MiddleClickAction.HIDE_ALL]: () => this._windowManager.hideAllWindows(),
@@ -159,16 +157,18 @@ export default class PanelIndicator {
         if (this._panelButton) return;
 
         const St = this._St;
+        const Clutter = this._Clutter;
+        const GLib = this._GLib;
         const PanelMenu = this._PanelMenu;
 
         this._panelButton = new PanelMenu.Button(
             0.0,
-            `${this._extension.metadata.name}-indicator`,
+            `${this._extension._extensionName}-indicator`,
             false
         );
 
         const box = new St.Widget({
-            layout_manager: new this._Clutter.BinLayout(),
+            layout_manager: new Clutter.BinLayout(),
             reactive: false,
         });
 
@@ -222,7 +222,7 @@ export default class PanelIndicator {
     }
 
     addToPanel() {
-        const role = `${this._extension.metadata.name} Indicator`;
+        const role = `${this._extension._extensionName} Indicator`;
 
         const positions = ["left", "left", "center", "right", "right"];
         const offsets = [0, 1, 0, 0, 1];
