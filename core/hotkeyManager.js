@@ -1,3 +1,5 @@
+const HOTKEY_ID = 'show-desktop-hotkey';
+
 export default class HotkeyManager {
     constructor(windowManager, extension, gnomeUI) {
         this._windowManager = windowManager;
@@ -16,30 +18,37 @@ export default class HotkeyManager {
 
         const flag = Meta.KeyBindingFlags.IGNORE_AUTOREPEAT;
 
-        if (this._extension._settings.get_boolean('enable-hotkey')) {
-            try {
-                Main.wm.addKeybinding(
-                    'show-desktop-hotkey',
-                    this._extension._settings,
-                    flag,
-                    mode,
-                    () => this._windowManager.toggleDesktop()
-                );
-                this._isHotkeySet = true;
-            } catch (e) {
-                // swallow or log — your choice
-                console.error('Failed to add keybinding', e);
-            }
+        this.disable();
+
+        if (!this._extension._settings.get_boolean('enable-hotkey'))
+            return;
+
+        try {
+            Main.wm.addKeybinding(
+                HOTKEY_ID,
+                this._extension._settings,
+                flag,
+                mode,
+                () => this._windowManager.toggleDesktop()
+            );
+
+            this._isHotkeySet = true;
+        } catch (e) {
+            console.error('Failed to add keybinding', e);
+            this._isHotkeySet = false;
         }
     }
 
     disable() {
         const { Main } = this._ui;
 
-        if (this._isHotkeySet) {
-            Main.wm.removeKeybinding('show-desktop-hotkey');
-            this._isHotkeySet = false;
+        try {
+            Main.wm.removeKeybinding(HOTKEY_ID);
+        } catch (e) {
+            // ignore
         }
+
+        this._isHotkeySet = false;
     }
 }
 

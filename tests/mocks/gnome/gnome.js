@@ -206,13 +206,19 @@ export function createMockGnomeAPI(workspacesOrWindows) {
     // -----------------------------
     const Clutter = {
         BinLayout: vi.fn(function BinLayout() {}),
+
+        // Mouse buttons (CRITICAL — missing right now)
+        BUTTON_PRIMARY: 1,
+        BUTTON_MIDDLE: 2,
+        BUTTON_SECONDARY: 3,
+
         EVENT_STOP: 1,
         EVENT_PROPAGATE: 2,
 
         ModifierType: {
             SHIFT_MASK: 1 << 0,
             CONTROL_MASK: 1 << 1,
-            MOD1_MASK: 1 << 2, // Alt
+            MOD1_MASK: 1 << 2,
         },
     };
 

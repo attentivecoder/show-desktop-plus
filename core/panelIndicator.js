@@ -1,3 +1,22 @@
+const LeftClickAction = {
+    TOGGLE_DESKTOP: 0,
+    HIDE_ALL: 1,
+    RESTORE_ALL: 2,
+    HIDE_CURRENT: 3,
+};
+
+const MiddleClickAction = {
+    HIDE_ALL: 0,
+    HIDE_CURRENT: 1,
+    TOGGLE_DESKTOP: 2,
+};
+
+const IconStyle = {
+    AUTO: 0,
+    DESKTOP: 1,
+    COMPUTER: 2,
+};
+
 export default class PanelIndicator {
     constructor(windowManager, stateStore, extension, gnomeUI) {
         this._windowManager = windowManager;
@@ -39,7 +58,6 @@ export default class PanelIndicator {
         }
     }
 
-
     _findPrefsWindow() {
         const windows = global.display.get_tab_list(
             this._Meta.TabList.NORMAL_ALL,
@@ -74,6 +92,33 @@ export default class PanelIndicator {
             this._prefsOpenedByExtension = false;
         });
     }
+    
+    _handleLeftClick(action) {
+        const actions = {
+            [LeftClickAction.TOGGLE_DESKTOP]: () => this._windowManager.toggleDesktop(),
+            [LeftClickAction.HIDE_ALL]: () => this._windowManager.hideAllWindows(),
+            [LeftClickAction.RESTORE_ALL]: () => this._windowManager.restoreAllWindows(),
+            [LeftClickAction.HIDE_CURRENT]: () => {
+                this._windowManager.addCurrentWindowToHidden();
+                this.updateIcon();
+            },
+        };
+
+        actions[action]?.();
+    }
+
+    _handleMiddleClick(action) {
+        const actions = {
+            [MiddleClickAction.HIDE_ALL]: () => this._windowManager.hideAllWindows(),
+            [MiddleClickAction.HIDE_CURRENT]: () => {
+                this._windowManager.addCurrentWindowToHidden();
+                this.updateIcon();
+            },
+            [MiddleClickAction.TOGGLE_DESKTOP]: () => this._windowManager.toggleDesktop(),
+        };
+
+        actions[action]?.();
+    }
 
     _handlePrefsWindow() {
         const prefsWin = this._findPrefsWindow();
@@ -107,8 +152,6 @@ export default class PanelIndicator {
         if (this._panelButton) return;
 
         const St = this._St;
-        const Clutter = this._Clutter;
-        const GLib = this._GLib;
         const PanelMenu = this._PanelMenu;
 
         this._panelButton = new PanelMenu.Button(
@@ -118,7 +161,7 @@ export default class PanelIndicator {
         );
 
         const box = new St.Widget({
-            layout_manager: new Clutter.BinLayout(),
+            layout_manager: new this._Clutter.BinLayout(),
             reactive: false,
         });
 
@@ -145,43 +188,28 @@ export default class PanelIndicator {
             (_, event) => {
                 const button = event.get_button();
 
-                if (button === 1) {
-                    const action = this._extension._settings.get_enum("left-click-action");
-                    switch (action) {
-                        case 0: this._windowManager.toggleDesktop(); break;
-                        case 1: this._windowManager.hideAllWindows(); break;
-                        case 2: this._windowManager.restoreAllWindows(); break;
-                        case 3:
-                            this._windowManager.addCurrentWindowToHidden();
-                            this.updateIcon();
-                            break;
+                switch (button) {
+                    case this._Clutter.BUTTON_PRIMARY: {
+                        const action = this._extension._settings.get_enum("left-click-action");
+                        this._handleLeftClick(action);
+                        return this._Clutter.EVENT_STOP;
                     }
-                    return Clutter.EVENT_STOP;
-                }
 
-                if (button === 2) {
-                    const action = this._extension._settings.get_enum("middle-click-action");
-                    switch (action) {
-                        case 0: this._windowManager.hideAllWindows(); break;
-                        case 1:
-                            this._windowManager.addCurrentWindowToHidden();
-                            this.updateIcon();
-                            break;
-                        case 2: this._windowManager.toggleDesktop(); break;
+                    case this._Clutter.BUTTON_MIDDLE: {
+                        const action = this._extension._settings.get_enum("middle-click-action");
+                        this._handleMiddleClick(action);
+                        return this._Clutter.EVENT_STOP;
                     }
-                    return Clutter.EVENT_STOP;
+
+                    case this._Clutter.BUTTON_SECONDARY:
+                        this._GLib.idle_add(this._GLib.PRIORITY_DEFAULT, () => {
+                            this._handlePrefsWindow();
+                            return this._GLib.SOURCE_REMOVE;
+                        });
+                        return this._Clutter.EVENT_STOP;
                 }
 
-                if (button === 3) {
-                    GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-                        this._handlePrefsWindow();
-                        return GLib.SOURCE_REMOVE;
-                    });
-
-                    return Clutter.EVENT_STOP;
-                }
-
-                return Clutter.EVENT_PROPAGATE;
+                return this._Clutter.EVENT_PROPAGATE;
             }
         );
     }
@@ -237,17 +265,20 @@ export default class PanelIndicator {
         const iconStyle = this._extension._settings.get_enum("icon-style");
 
         switch (iconStyle) {
-            case 0:
+            case IconStyle.AUTO:
                 this._panelIcon.icon_name = hasHidden
                     ? "user-desktop-symbolic"
                     : "computer-symbolic";
                 break;
-            case 1:
+
+            case IconStyle.DESKTOP:
                 this._panelIcon.icon_name = "user-desktop-symbolic";
                 break;
-            case 2:
+
+            case IconStyle.COMPUTER:
                 this._panelIcon.icon_name = "computer-symbolic";
                 break;
+
             default:
                 this._panelIcon.icon_name = "computer-symbolic";
         }
