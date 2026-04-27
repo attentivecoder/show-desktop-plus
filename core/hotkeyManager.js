@@ -42,10 +42,12 @@ export default class HotkeyManager {
     disable() {
         const { Main } = this._ui;
 
-        try {
-            Main.wm.removeKeybinding(HOTKEY_ID);
-        } catch (e) {
-            // ignore
+        if (this._isHotkeySet) {
+            try {
+                Main.wm.removeKeybinding(HOTKEY_ID);
+            } catch (e) {
+                // ignore
+            }
         }
 
         this._isHotkeySet = false;

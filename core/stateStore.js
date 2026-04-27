@@ -23,7 +23,6 @@ export default class StateStore {
         return this._storedStateByWorkspace.size;
     }
 
-
     entries() {
         return this._storedStateByWorkspace.entries();
     }
