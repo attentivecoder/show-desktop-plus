@@ -5,35 +5,11 @@ import { createMockGnomeAPI } from '../../mocks/gnome/gnome.js';
 describe('PanelIndicator – right‑click behavior (preferences)', () => {
     let indicator;
     let mockWindowManager;
-    let mockExtension;
+    let mockExtension; 
     let g;
-    let clickHandler;
 
     beforeEach(() => {
         g = createMockGnomeAPI([]);
-
-        g.PanelMenu.Button = vi.fn(function () {
-            this.connect = vi.fn((signal, handler) => {
-                if (signal === 'button-release-event') clickHandler = handler;
-                return 1;
-            });
-            this.add_child = vi.fn();
-            this.clear_actions = vi.fn();
-            this.destroy = vi.fn();
-            this.reactive = true;
-        });
-
-        global.workspace_manager = {
-            get_active_workspace: vi.fn(() => ({ index: () => 0 })),
-        };
-
-        global.display = {
-            get_tab_list: vi.fn(() => []),
-        };
-
-        global.get_current_time = vi.fn(() => 123456);
-
-        g.Meta.TabList = { NORMAL_ALL: 0 };
 
         mockWindowManager = {
             hideAllWindows: vi.fn(),
@@ -59,54 +35,56 @@ describe('PanelIndicator – right‑click behavior (preferences)', () => {
             mockExtension,
             g
         );
-
-        indicator._createPanelButton();
     });
 
-    const clickRight = () =>
-        clickHandler(null, { get_button: () => 3 });
-        
-        
     function withWindow(win) {
         win.connect = vi.fn(() => 1);
         win.disconnect = vi.fn();
         return win;
     }
 
-    it('right-click: opens preferences when no prefs window exists', () => {
-        global.display.get_tab_list.mockReturnValue([]);
+    it('right-click: opens preferences when no prefs window exists', async () => {
+    // PanelIndicator uses g.display.get_window_actors()
+    g.display.get_window_actors = vi.fn(() => []);
 
-        clickRight();
+    await indicator._handlePrefsWindow();
 
-        expect(mockExtension.openPreferences).toHaveBeenCalledTimes(1);
-        expect(indicator._prefsOpenedByExtension).toBe(true);
+    expect(mockExtension.openPreferences).toHaveBeenCalledTimes(1);
+    expect(indicator._prefsOpenedByExtension).toBe(true);
+});
+
+it('right-click: focuses preferences when already open', async () => {
+    const prefsWin = withWindow({
+        get_title: () => 'show-desktop-plus Preferences',
+        get_wm_class: () => 'org.gnome.Shell.Extensions',
+        get_workspace: vi.fn(() => g.workspace_manager.get_active_workspace()),
+        change_workspace: vi.fn(),
+        activate: vi.fn(),
     });
 
-    it('right-click: focuses preferences when already open', () => {
-        const prefsWin = withWindow({
-            get_title: () => 'show-desktop-plus Preferences',
-            get_wm_class: () => 'org.gnome.Shell.Extensions',
-            get_workspace: vi.fn(() => global.workspace_manager.get_active_workspace()),
-            change_workspace: vi.fn(),
-            activate: vi.fn(),
-        });
+    // PanelIndicator uses g.display.get_window_actors()
+    g.display.get_window_actors = vi.fn(() => [
+        { meta_window: prefsWin },
+    ]);
 
-        global.display.get_tab_list.mockReturnValue([prefsWin]);
+    await indicator._handlePrefsWindow();
 
-        clickRight();
+    expect(prefsWin.activate).toHaveBeenCalledTimes(1);
+    expect(prefsWin.change_workspace).not.toHaveBeenCalled();
+    expect(mockExtension.openPreferences).not.toHaveBeenCalled();
+});
 
-        expect(prefsWin.activate).toHaveBeenCalledTimes(1);
-        expect(prefsWin.change_workspace).not.toHaveBeenCalled();
-        expect(mockExtension.openPreferences).not.toHaveBeenCalled();
-    });
 
-    it('right-click does NOT trigger left-click actions', () => {
-        clickRight();
+   it('right-click does NOT trigger left-click actions', async () => {
+    g.display.get_window_actors = vi.fn(() => []);
 
-        expect(mockWindowManager.hideAllWindows).not.toHaveBeenCalled();
-        expect(mockWindowManager.restoreAllWindows).not.toHaveBeenCalled();
-        expect(mockWindowManager.toggleDesktop).not.toHaveBeenCalled();
-        expect(mockWindowManager.addCurrentWindowToHidden).not.toHaveBeenCalled();
-    });
+    await indicator._handlePrefsWindow();
+
+    expect(mockWindowManager.hideAllWindows).not.toHaveBeenCalled();
+    expect(mockWindowManager.restoreAllWindows).not.toHaveBeenCalled();
+    expect(mockWindowManager.toggleDesktop).not.toHaveBeenCalled();
+    expect(mockWindowManager.addCurrentWindowToHidden).not.toHaveBeenCalled();
+});
+
 });
 

@@ -2,10 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ExtensionController from '../../../core/extensionController.js';
 
 // ------------------------------------------------------------
-// Vitest‑safe mocks (NO top-level variables used inside factories)
+// Vitest‑safe mocks
 // ------------------------------------------------------------
 
-// ---- gnomeUI.js ----
 vi.mock('../../../core/gnomeUI.js', () => ({
     loadGnomeUI: vi.fn(async () => ({
         Meta: {},
@@ -37,10 +36,14 @@ vi.mock('../../../core/gnomeUI.js', () => ({
                 return 0;
             }),
         },
+
+        workspace_manager: {
+            connect: vi.fn(() => 123),
+            disconnect: vi.fn(),
+        },
     })),
 }));
 
-// ---- panelIndicator.js ----
 vi.mock('../../../core/panelIndicator.js', () => {
     const addToPanel = vi.fn();
     const destroy = vi.fn();
@@ -56,7 +59,6 @@ vi.mock('../../../core/panelIndicator.js', () => {
     };
 });
 
-// ---- hotkeyManager.js ----
 vi.mock('../../../core/hotkeyManager.js', () => {
     const enable = vi.fn();
     const disable = vi.fn();
@@ -70,7 +72,6 @@ vi.mock('../../../core/hotkeyManager.js', () => {
     };
 });
 
-// ---- stateStore.js ----
 vi.mock('../../../core/stateStore.js', () => {
     const clear = vi.fn();
 
@@ -82,7 +83,6 @@ vi.mock('../../../core/stateStore.js', () => {
     };
 });
 
-// ---- windowManager.js ----
 vi.mock('../../../core/windowManager.js', () => ({
     default: vi.fn().mockImplementation(() => ({})),
 }));
@@ -96,10 +96,7 @@ describe('ExtensionController lifecycle', () => {
     let mockExtension;
 
     beforeEach(() => {
-        global.workspace_manager = {
-            connect: vi.fn(() => 999),
-            disconnect: vi.fn(),
-        };
+        global.workspace_manager = { disconnect: vi.fn() };
         global.get_workspace_manager = () => global.workspace_manager;
 
         mockExtension = {
@@ -114,7 +111,7 @@ describe('ExtensionController lifecycle', () => {
 
         controller = new ExtensionController(mockExtension);
     });
-
+    
     it('enable() wires everything correctly', async () => {
         const panelMocks = vi.mocked(
             await import('../../../core/panelIndicator.js')
@@ -124,21 +121,21 @@ describe('ExtensionController lifecycle', () => {
             await import('../../../core/hotkeyManager.js')
         ).__mocks;
 
-        const stateMocks = vi.mocked(
-            await import('../../../core/stateStore.js')
-        ).__mocks;
-
         await controller.enable();
 
         expect(panelMocks.addToPanel).toHaveBeenCalledTimes(1);
         expect(hotkeyMocks.enable).toHaveBeenCalledTimes(1);
         expect(panelMocks.updateIcon).toHaveBeenCalledTimes(1);
 
-        expect(global.workspace_manager.connect).toHaveBeenCalledTimes(1);
+        const gnomeUI = await import('../../../core/gnomeUI.js');
+        const loaded = await gnomeUI.loadGnomeUI.mock.results[0].value;
+        const wsMgr = loaded.workspace_manager;
+
+        expect(wsMgr.connect).toHaveBeenCalledTimes(1);
         expect(mockExtension._settings.connect).toHaveBeenCalledTimes(4);
     });
 
-    it('disable() unwires everything correctly', async () => {
+     it('disable() unwires everything correctly', async () => {
         const panelMocks = vi.mocked(
             await import('../../../core/panelIndicator.js')
         ).__mocks;
@@ -153,17 +150,20 @@ describe('ExtensionController lifecycle', () => {
 
         await controller.enable();
 
-        const id = global.workspace_manager.connect.mock.results[0].value;
+        const wsMgr = controller._gnomeUI.workspace_manager;
+
+        const id = wsMgr.connect.mock.results[0].value;
 
         controller.disable();
 
-        expect(global.workspace_manager.disconnect).toHaveBeenCalledWith(id);
+        expect(wsMgr.disconnect).toHaveBeenCalledWith(id);
+
         expect(mockExtension._settings.disconnect).toHaveBeenCalledTimes(4);
         expect(hotkeyMocks.disable).toHaveBeenCalledTimes(1);
         expect(panelMocks.destroy).toHaveBeenCalledTimes(1);
         expect(stateMocks.clear).toHaveBeenCalledTimes(1);
     });
-    
+
     it('disable() is safe when called before enable()', () => {
         const fresh = new ExtensionController(mockExtension);
 

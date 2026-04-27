@@ -31,17 +31,32 @@ export default class WindowManager {
 
         const ids = [];
 
+        // Remove from state when destroyed
         ids.push(win.connect('unmanaged', () => {
             this._removeWindowFromState(win);
+            win._dtpHidden = null;
             this._onStateChanged();
         }));
 
-        ids.push(win.connect('notify::minimized', () => {
-            if (!win.minimized) {
+        // Remove when user manually restores it
+        const removeIfUserRestored = () => {
+            const hidden = win._dtpHidden;
+            if (!hidden) return;
+
+            const currentWs = this._workspace_manager.get_active_workspace().index();
+            const currentMonitor = this._display.get_current_monitor();
+
+            if (hidden.workspace === currentWs &&
+                hidden.monitor === currentMonitor) {
+
                 this._removeWindowFromState(win);
+                win._dtpHidden = null;
                 this._onStateChanged();
             }
-        }));
+        };
+
+        ids.push(win.connect('focus', removeIfUserRestored));
+        ids.push(win.connect('notify::appears-focused', removeIfUserRestored));
 
         this._windowSignals.set(win, ids);
     }
@@ -56,6 +71,7 @@ export default class WindowManager {
                 win.disconnect(id);
 
             delete win._dtpTracked;
+            delete win._dtpHidden;
         }
 
         this._windowSignals.clear();
@@ -136,9 +152,8 @@ export default class WindowManager {
         const id = this._getWindowId(focusWin);
         if (!id) return;
 
-
         const map = this._stateStore.getOrCreateWorkspaceMap(wsIndex);
-        
+
         const ignoreExternal =
             this._extension._settings.get_boolean('current-monitor-only');
         const monitor = focusWin.get_monitor();
@@ -150,6 +165,7 @@ export default class WindowManager {
 
         if (!list.includes(id)) {
             list.push(id);
+            focusWin._dtpHidden = { workspace: wsIndex, monitor };
             this._trackWindow(focusWin);
             focusWin.minimize();
         }
@@ -189,6 +205,7 @@ export default class WindowManager {
         this._stateStore.setWorkspaceMap(wsIndex, map);
 
         for (const w of sorted) {
+            w._dtpHidden = { workspace: wsIndex, monitor: currentMonitor };
             this._trackWindow(w);
             w.minimize();
         }
@@ -200,36 +217,60 @@ export default class WindowManager {
     }
 
     restoreAllWindows() {
-        const workspace = this._workspace_manager.get_active_workspace();
-        const wsIndex = workspace.index();
+        const ignoreExternal =
+            this._extension._settings.get_boolean('current-monitor-only');
 
-        const map = this._stateStore.getWorkspaceMap(wsIndex);
-        if (!map) return;
+        const hasCurrentMonitor =
+            ignoreExternal &&
+            this._display &&
+            typeof this._display.get_current_monitor === 'function';
+
+        const currentMonitor = hasCurrentMonitor
+            ? this._display.get_current_monitor()
+            : null;
+
+        const wm = this._workspace_manager;
+
+        const workspaces = wm.n_workspaces
+            ? Array.from({ length: wm.n_workspaces }, (_, i) =>
+                  wm.get_workspace_by_index(i)
+              )
+            : [wm.get_active_workspace()];
 
         let last = null;
 
-        for (const list of map.values()) {
-            for (const id of list) {
-                const w = this._resolveWindowById(id);
-                if (!w) continue;
+        for (const ws of workspaces) {
+            const wsIndex = ws.index();
+            const map = this._stateStore.getWorkspaceMap(wsIndex);
+            if (!map) continue;
 
-                try {
-                    if (typeof w.unminimize === 'function')
-                        w.unminimize();
+            for (const [monitorKey, list] of map.entries()) {
+                for (const id of list) {
+                    const w = this._resolveWindowById(id);
+                    if (!w) continue;
 
-                    last = w;
-                } catch {}
+                    if (hasCurrentMonitor &&
+                        typeof w.get_monitor === 'function' &&
+                        w.get_monitor() !== currentMonitor)
+                        continue;
+
+                    try {
+                        w._dtpHidden = null;
+                        if (typeof w.unminimize === 'function')
+                            w.unminimize();
+                        last = w;
+                    } catch {}
+                }
             }
+
+            this._stateStore.deleteWorkspace(wsIndex);
         }
 
-        if (last) {
+        if (last && typeof last.activate === 'function') {
             try {
-                if (typeof last.activate === 'function')
-                    last.activate(this._get_current_time());
+                last.activate(this._get_current_time());
             } catch {}
         }
-
-        this._stateStore.deleteWorkspace(wsIndex);
 
         if (this._Main.overview.visible)
             this._Main.overview.hide();

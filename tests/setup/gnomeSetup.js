@@ -1,25 +1,14 @@
-import { Meta, Main } from '../mocks/gnome/gnome.js';
+import { createMockGnomeAPI } from '../mocks/gnome/gnome.js';
 
-globalThis.__GNOME__ = {
-    Meta,
-    Main
-};
+const gnome = createMockGnomeAPI();
 
-globalThis.global = {
-    workspace_manager: {
-        get_active_workspace: () => ({
-            index: () => 0,
-            list_windows: () => []
-        }),
-        get_n_workspaces: 1,
-        get_workspace_by_index: () => ({
-            list_windows: () => []
-        })
-    },
-    display: {
-        get_focus_window: () => null,
-        get_current_monitor: () => 0,
-        sort_windows_by_stacking: (w) => w
-    },
-    get_current_time: () => Date.now()
-};
+globalThis.__GNOME__ = gnome;
+
+globalThis.get_display = () => gnome.display;
+globalThis.get_workspace_manager = () => gnome.workspace_manager;
+globalThis.get_current_time = () => Date.now();
+
+globalThis.St = gnome.St;
+globalThis.Clutter = gnome.Clutter;
+globalThis.Meta = gnome.Meta;
+globalThis.Main = gnome.Main;

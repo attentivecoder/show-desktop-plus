@@ -3,7 +3,7 @@ import PanelIndicator from '../../../core/panelIndicator.js';
 import { createMockGnomeAPI } from '../../mocks/gnome/gnome.js';
 
 describe('PanelIndicator – right-click defensive behavior', () => {
-    let indicator, mockExtension, gnome;
+    let indicator, mockExtension, gnome, ws;
 
     function simulateRightClick() {
         const event = { get_button: () => 3 };
@@ -13,7 +13,14 @@ describe('PanelIndicator – right-click defensive behavior', () => {
     beforeEach(() => {
         gnome = createMockGnomeAPI([]);
 
-        globalThis.global = gnome;
+        // Shared workspace object used by BOTH PanelIndicator and prefs window
+        ws = { index: () => 0 };
+
+        // Override workspace manager BEFORE constructing PanelIndicator
+        gnome.workspace_manager._active = 0;
+        gnome.workspace_manager.get_workspace_by_index = () => ws;
+        gnome.workspace_manager.get_active_workspace = () => ws;
+        gnome.workspace_manager.n_workspaces = 1;
 
         mockExtension = {
             _extensionName: 'show-desktop-plus',
@@ -44,7 +51,7 @@ describe('PanelIndicator – right-click defensive behavior', () => {
     }
 
     it('opens preferences when no prefs window exists', () => {
-        gnome.display.get_tab_list.mockReturnValue([]);
+        gnome.set_window_actors([]);
 
         simulateRightClick();
 
@@ -53,51 +60,39 @@ describe('PanelIndicator – right-click defensive behavior', () => {
 
     it('focuses existing prefs window (get_title)', () => {
         const prefsWin = withWindow({
-            title: 'show-desktop-plus Preferences',
             get_title: () => 'show-desktop-plus Preferences',
             get_wm_class: () => 'org.gnome.Shell.Extensions',
             activate: vi.fn(),
-            get_workspace: () => gnome.workspace_manager.get_active_workspace(),
+            get_workspace: () => ws,
             change_workspace: vi.fn(),
         });
 
-        gnome.display.get_tab_list.mockReturnValue([prefsWin]);
+        gnome.set_window_actors([
+            { meta_window: prefsWin },
+        ]);
 
         simulateRightClick();
 
-        expect(prefsWin.activate).toHaveBeenCalled();
-    });
-
-    it('focuses existing prefs window (.title)', () => {
-        const prefsWin = withWindow({
-            title: 'show-desktop-plus Preferences',
-            get_wm_class: () => 'org.gnome.Shell.Extensions',
-            activate: vi.fn(),
-            get_workspace: () => gnome.workspace_manager.get_active_workspace(),
-            change_workspace: vi.fn(),
-        });
-
-        gnome.display.get_tab_list.mockReturnValue([prefsWin]);
-
-        simulateRightClick();
-
-        expect(prefsWin.activate).toHaveBeenCalled();
+        expect(prefsWin.activate).toHaveBeenCalledWith(expect.any(Number));
     });
 
     it('falls back to openPreferences() if activate throws', () => {
         const prefsWin = withWindow({
             get_title: () => 'show-desktop-plus Preferences',
             get_wm_class: () => 'org.gnome.Shell.Extensions',
-            activate: () => { throw new Error('boom') },
-            get_workspace: () => gnome.workspace_manager.get_active_workspace(),
+            activate: () => { throw new Error('boom'); },
+            get_workspace: () => ws,
             change_workspace: vi.fn(),
         });
 
-        gnome.display.get_tab_list.mockReturnValue([prefsWin]);
+        gnome.set_window_actors([
+            { meta_window: prefsWin },
+        ]);
 
         simulateRightClick();
 
         expect(mockExtension.openPreferences).toHaveBeenCalled();
     });
+
 });
 

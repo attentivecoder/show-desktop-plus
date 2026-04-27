@@ -11,6 +11,15 @@ describe('PanelIndicator mouse click events', () => {
 
     beforeEach(() => {
         g = createMockGnomeAPI();
+        
+        g.GLib.idle_add = vi.fn((priority, fn) => {
+            fn();
+            return 1;
+        });
+        
+        g.Clutter.BUTTON_PRIMARY = 1;
+        g.Clutter.BUTTON_MIDDLE = 2;
+        g.Clutter.BUTTON_SECONDARY = 3;
 
         globalThis.St = g.St;
         globalThis.Clutter = g.Clutter;
@@ -65,10 +74,18 @@ describe('PanelIndicator mouse click events', () => {
         expect(mockWindowManager.hideAllWindows).toHaveBeenCalledTimes(1);
     });
 
-    it('right-click triggers preferences open', () => {
+   it('right-click triggers preferences open', async () => {
+        g.workspace_manager.get_active_workspace = vi.fn(() => ({
+            index: () => 0,
+        }));
+
+        indicator._findPrefsWindow = vi.fn(() => undefined);
+
         indicator._panelButton.emit('button-release-event', {
             get_button: () => 3,
         });
+
+        await new Promise(r => setTimeout(r, 0));
 
         expect(mockExtension.openPreferences).toHaveBeenCalledTimes(1);
     });

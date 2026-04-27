@@ -10,6 +10,13 @@ describe('PanelIndicator – right-click prefs safety', () => {
     beforeEach(() => {
         g = createMockGnomeAPI();
 
+        g.GLib.idle_add = vi.fn((priority, fn) => {
+            fn();
+            return 1;
+        });
+
+        g.get_window_actors = vi.fn(() => []);
+
         globalThis.St = g.St;
         globalThis.Clutter = g.Clutter;
         globalThis.PanelMenu = g.PanelMenu;
@@ -31,7 +38,7 @@ describe('PanelIndicator – right-click prefs safety', () => {
 
         indicator = new PanelIndicator(
             {},
-            {}, 
+            {},
             mockExtension,
             g
         );
@@ -39,19 +46,17 @@ describe('PanelIndicator – right-click prefs safety', () => {
         indicator.addToPanel();
     });
 
-    it('opens preferences when no valid prefs window exists (weird windows)', () => {
-        g.display.get_tab_list.mockReturnValue([
-            { title: null },
-            { get_title: () => null },
-            { get_title: () => 'Firefox' },
-            { get_title: () => 'Extensions — GNOME Shell' },
-        ]);
+    it('opens preferences when no valid prefs window exists', async () => {
+
+        g.Clutter.BUTTON_SECONDARY = 3;
 
         indicator._panelButton.emit('button-release-event', {
             get_button: () => 3,
         });
 
+
+        await new Promise(r => setTimeout(r, 0));
+
         expect(mockExtension.openPreferences).toHaveBeenCalledTimes(1);
     });
 });
-

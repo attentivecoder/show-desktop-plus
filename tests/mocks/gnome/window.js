@@ -5,14 +5,46 @@ export function createMockWindow(id, monitor = 0, props = {}) {
         minimized: props.minimized ?? false,
         skip_taskbar: props.skip_taskbar ?? false,
         window_type: props.window_type ?? 0,
+
         _id: id,
         _monitor: monitor,
-        workspace: props.workspace ?? 0,
 
-        get_id() { return this._id; },
-        get_monitor() { return this._monitor; },
-        located_on_workspace() { return true; },
+        // IMPORTANT: workspace is stored as object, not primitive
+        _workspace: props.workspace ?? { index: () => 0 },
 
+        // -----------------------
+        // BASIC API
+        // -----------------------
+        get_id() {
+            return this._id;
+        },
+
+        get_monitor() {
+            return this._monitor;
+        },
+
+        located_on_workspace() {
+            return true;
+        },
+
+        // -----------------------
+        // WORKSPACE HANDLING
+        // -----------------------
+        get_workspace() {
+            return this._workspace;
+        },
+
+        change_workspace: vi.fn(function (ws) {
+            this._workspace = ws;
+            this.workspace = ws?.index?.() ?? 0;
+            this.emit?.('notify::workspace');
+        }),
+
+        workspace: props.workspace?.index?.() ?? 0,
+
+        // -----------------------
+        // SIGNAL SYSTEM
+        // -----------------------
         _signals: new Map(),
         _nextSignalId: 1,
 
@@ -28,44 +60,33 @@ export function createMockWindow(id, monitor = 0, props = {}) {
 
         emit(signal, ...args) {
             for (const { signal: s, handler } of this._signals.values()) {
-                if (s === signal) handler(win, ...args);
+                if (s === signal) handler(this, ...args);
             }
         },
-        
-        get_window_type() {
-            return this.window_type;
-        },
 
-        minimize: vi.fn(() => {
-            win.minimized = true;
-            win.emit('notify::minimized');
+        // -----------------------
+        // WINDOW ACTIONS
+        // -----------------------
+        minimize: vi.fn(function () {
+            this.minimized = true;
+            this.emit('notify::minimized');
         }),
 
-        unminimize: vi.fn(() => {
-            win.minimized = false;
-            win.emit('notify::minimized');
-        }),
-
-        change_workspace: vi.fn((ws) => {
-            win.workspace = ws;
-            win.emit('notify::workspace');
-        }),
-
-        destroy: vi.fn(() => {
-            win.emit('unmanaged');
-
-            const ws = win._workspaceRef;
-            if (ws) {
-                ws.windows = ws.windows.filter(w => w !== win);
-            }
-
-            win.workspace = -1;
+        unminimize: vi.fn(function () {
+            this.minimized = false;
+            this.emit('notify::minimized');
         }),
 
         activate: vi.fn(),
 
-        get_workspace: () => ({ index: () => win.workspace }),
+        destroy: vi.fn(function () {
+            this.emit('unmanaged');
+            this.workspace = -1;
+        }),
 
+        // -----------------------
+        // METADATA
+        // -----------------------
         get_title() {
             return props.title ?? `Window ${id}`;
         },
@@ -73,8 +94,11 @@ export function createMockWindow(id, monitor = 0, props = {}) {
         get_wm_class() {
             return props.wmClass ?? "org.gnome.Shell.Extensions";
         },
+
+        get_window_type() {
+            return this.window_type;
+        },
     };
 
     return win;
 }
-

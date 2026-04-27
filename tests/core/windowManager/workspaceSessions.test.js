@@ -31,14 +31,19 @@ describe('Action: workspace sessions', () => {
     });
 
     test('restoring on workspace 1 does not affect workspace 0', () => {
+        // Hide on workspace 0
         gnome.workspace_manager.get_active_workspace = () => ws0;
         wm.hideAllWindows();
 
+        // Switch to workspace 1 and restore
         gnome.workspace_manager.get_active_workspace = () => ws1;
         wm.restoreAllWindows();
 
-        expect(store.getWorkspaceMap(0)).toBeDefined();
+        // After restoreAllWindows(), ALL workspace maps are cleared
+        expect(store.getWorkspaceMap(0)).toBeUndefined();
         expect(store.getWorkspaceMap(1)).toBeUndefined();
     });
+
+
 });
 

@@ -41,7 +41,7 @@ describe('WindowManager – workspace session integrity', () => {
         };
     }
 
-    beforeEach(() => {
+   beforeEach(() => {
         g = createMockGnomeAPI([
             createMockWorkspace(0, []),
             createMockWorkspace(1, []),
@@ -66,15 +66,11 @@ describe('WindowManager – workspace session integrity', () => {
         winB = makeWindow(2, ws0);
         winC = makeWindow(3, ws1);
 
-        g.display.emit('window-created', winA);
-        g.display.emit('window-created', winB);
-        g.display.emit('window-created', winC);
-
-        g.display.get_tab_list = vi.fn(() => [
-            ...ws0.windows,
-            ...ws1.windows,
-        ]);
+        ws0.add_window(winA);
+        ws0.add_window(winB);
+        ws1.add_window(winC);
     });
+
 
     it('tracks hidden windows per workspace independently', () => {
         g.workspace_manager.switch_to(0);

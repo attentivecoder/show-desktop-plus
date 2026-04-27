@@ -29,6 +29,9 @@ vi.mock('gi://Gtk', () => {
     return { default: { Builder: MockBuilder } };
 }, { virtual: true });
 
+// Import the mocked Gtk (NO await needed)
+import Gtk from 'gi://Gtk';
+
 // --- Mock Gio ---------------------------------------------------------------
 vi.mock('gi://Gio', () => ({ default: {} }), { virtual: true });
 
@@ -40,15 +43,14 @@ vi.mock(
             constructor() {
                 this.metadata = { 'gettext-domain': 'test-domain' };
 
-                // Directory mock with recursive get_child()
-                this.dir = {
-                    get_child: (name) => ({
-                        get_child: (child) => ({
-                            get_path: () => `/fake/${name}/${child}`
-                        }),
-                        get_path: () => `/fake/${name}`
-                    })
-                };
+                // Fully recursive mock directory tree
+                const makeNode = (path) => ({
+                    get_child: (name) => makeNode(`${path}/${name}`),
+                    get_path: () => path
+                });
+
+                // Root directory
+                this.dir = makeNode('/fake');
             }
 
             getSettings() {
@@ -81,6 +83,9 @@ describe('Preferences Window (prefs.js)', () => {
     let window;
 
     beforeEach(() => {
+        // Make Gtk available globally (prefs.js expects this)
+        globalThis.Gtk = Gtk;
+
         prefs = new Prefs();
 
         window = {

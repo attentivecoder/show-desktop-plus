@@ -1,25 +1,22 @@
+import { vi } from "vitest";
 import PanelIndicator from "../../../core/panelIndicator.js";
 import * as gnomeUI from "../../mocks/core/gnomeUI.mock.js";
 
-describe("PanelIndicator – mutation‑driven tests", () => {
+describe("PanelIndicator – mutation-driven tests", () => {
   beforeEach(() => {
     vi.stubGlobal("logError", vi.fn());
-
-    global.display = {
-      get_tab_list: vi.fn(() => []),
-    };
-
-    global.workspace_manager = {
-      get_active_workspace: () => ({
-        index: () => 0,
-        list_windows: () => [],
-      }),
-    };
   });
 
   it("returns early when panel icon or badge is missing", async () => {
-    const windowManager = { getHiddenCountForWorkspace: vi.fn() };
-    const settings = { get_enum: vi.fn(), get_boolean: vi.fn() };
+    const windowManager = {
+      getHiddenCountForWorkspace: vi.fn(),
+    };
+
+    const settings = {
+      get_enum: vi.fn(),
+      get_boolean: vi.fn(),
+    };
+
     const gnome = await gnomeUI.loadGnomeUI();
 
     const indicator = new PanelIndicator(
@@ -47,7 +44,15 @@ describe("PanelIndicator – mutation‑driven tests", () => {
     };
 
     const gnome = await gnomeUI.loadGnomeUI();
-    gnome.Meta.TabList = { NORMAL_ALL: 0 };
+
+    gnome.get_window_actors = vi.fn(() => [
+      {
+        meta_window: {
+          get_title: () => undefined, 
+          get_wm_class: () => "org.gnome.Shell.Extensions",
+        },
+      },
+    ]);
 
     const indicator = new PanelIndicator(
       windowManager,
@@ -55,14 +60,6 @@ describe("PanelIndicator – mutation‑driven tests", () => {
       extension,
       gnome
     );
-
-    const fakeWindow = {
-      get_title: undefined,
-      title: undefined,
-      get_wm_class: () => "org.gnome.Shell.Extensions",
-    };
-
-    global.display.get_tab_list = vi.fn(() => [fakeWindow]);
 
     const result = indicator._findPrefsWindow();
 
@@ -79,7 +76,15 @@ describe("PanelIndicator – mutation‑driven tests", () => {
     };
 
     const gnome = await gnomeUI.loadGnomeUI();
-    gnome.Meta.TabList = { NORMAL_ALL: 0 };
+
+    gnome.get_window_actors = vi.fn(() => [
+      {
+        meta_window: {
+          get_title: () => "show-desktop-plus Preferences",
+          get_wm_class: () => "NotTheRightClass",
+        },
+      },
+    ]);
 
     const indicator = new PanelIndicator(
       windowManager,
@@ -87,13 +92,6 @@ describe("PanelIndicator – mutation‑driven tests", () => {
       extension,
       gnome
     );
-
-    const fakeWindow = {
-      get_title: () => "show-desktop-plus Preferences",
-      get_wm_class: () => "NotTheRightClass",
-    };
-
-    global.display.get_tab_list = vi.fn(() => [fakeWindow]);
 
     const result = indicator._findPrefsWindow();
 
@@ -136,16 +134,15 @@ describe("PanelIndicator – mutation‑driven tests", () => {
     const settings = { get_enum: vi.fn(), get_boolean: vi.fn() };
 
     vi.stubGlobal("logError", undefined);
+
     const consoleErrorSpy = vi
       .spyOn(console, "error")
       .mockImplementation(() => {});
 
-    const promiseLike = Promise.reject("boom");
-
     const extension = {
       metadata: { name: "test-extension" },
       _settings: settings,
-      openPreferences: vi.fn(() => promiseLike),
+      openPreferences: vi.fn(() => Promise.reject("boom")),
     };
 
     const gnome = await gnomeUI.loadGnomeUI();
@@ -178,7 +175,7 @@ describe("PanelIndicator – mutation‑driven tests", () => {
     const extension = {
       metadata: { name: "test-extension" },
       _settings: settings,
-      openPreferences: vi.fn(() => ({ foo: "bar" })), // no catch()
+      openPreferences: vi.fn(() => ({ foo: "bar" })),
     };
 
     const gnome = await gnomeUI.loadGnomeUI();
@@ -198,4 +195,3 @@ describe("PanelIndicator – mutation‑driven tests", () => {
     expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 });
-

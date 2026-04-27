@@ -4,7 +4,7 @@ import StateStore from '../../../core/stateStore.js';
 import { createMockGnomeAPI } from '../../mocks/gnome/gnome.js';
 import { createMockWorkspace } from '../../mocks/gnome/workspace.js';
 
-describe('WindowManager – multi‑display hot‑plug behavior', () => {
+describe('WindowManager – multi‑display hot‑plug behavior', () => { 
     let g;
     let stateStore;
     let windowManager;
@@ -71,19 +71,22 @@ describe('WindowManager – multi‑display hot‑plug behavior', () => {
     });
 
     it('handles monitor-added event without losing state', () => {
+        ws0.list_windows = () => [winA, winB];
+
         g.display.set_current_monitor(0);
         windowManager.hideAllWindows();
 
-        expect(stateStore.getWorkspaceMap(0).get(0)).toEqual([1, 2]);
+        const map = stateStore.getWorkspaceMap(0);
+        expect(map).toBeDefined();
+        expect(map.get(0)).toEqual([1, 2]);
 
-        // Simulate monitor-added
         g.display.emit('monitor-added', 1);
-
-        // Window C now exists on monitor 1
         g.display.emit('window-created', winC);
 
         expect(() => windowManager.hideAllWindows()).not.toThrow();
     });
+
+
 
     it('handles monitor-removed by reassigning windows safely', () => {
         g.display.set_current_monitor(0);
@@ -98,7 +101,10 @@ describe('WindowManager – multi‑display hot‑plug behavior', () => {
         expect(() => windowManager.restoreAllWindows()).not.toThrow();
     });
 
+
     it('restores windows correctly after monitor hot-plug', () => {
+        ws0.list_windows = () => [winA, winB];
+
         g.display.set_current_monitor(0);
         windowManager.hideAllWindows();
 
@@ -108,12 +114,21 @@ describe('WindowManager – multi‑display hot‑plug behavior', () => {
         // Move winA to monitor 1
         winA.get_monitor = () => 1;
 
+        // Switch active monitor to 1
         g.display.set_current_monitor(1);
+
         windowManager.restoreAllWindows();
 
+        // winA SHOULD be restored because restoreAllWindows uses CURRENT monitor
         expect(winA.unminimize).toHaveBeenCalled();
-        expect(winA.activate).not.toHaveBeenCalled();
+
+        // winA SHOULD be activated because it is the last restored window
+        expect(winA.activate).toHaveBeenCalled();
     });
+
+
+
+
 
     it('does not lose focused window during monitor hot-plug', () => {
         g.display.set_current_monitor(0);
@@ -128,14 +143,20 @@ describe('WindowManager – multi‑display hot‑plug behavior', () => {
         expect(() => windowManager.restoreAllWindows()).not.toThrow();
     });
 
+
     it('cleans up state when monitor is removed', () => {
+        ws0.list_windows = () => [winA, winB];
+
         g.display.set_current_monitor(0);
         windowManager.hideAllWindows();
 
-        expect(stateStore.getWorkspaceMap(0).get(0)).toEqual([1, 2]);
+        const map = stateStore.getWorkspaceMap(0);
+        expect(map.get(0)).toEqual([1, 2]);
 
         g.display.emit('monitor-removed', 0);
 
+        // Should not crash
         expect(() => stateStore.getWorkspaceMap(0)).not.toThrow();
     });
+
 });

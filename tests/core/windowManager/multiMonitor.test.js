@@ -71,6 +71,7 @@ describe('WindowManager – multi‑monitor behavior', () => {
         g.display.emit('window-created', winB);
         g.display.emit('window-created', winC);
         g.display.emit('window-created', winD);
+        ws0.list_windows = () => [winA, winB, winC, winD];
 
         g.display.get_tab_list = vi.fn(() => [
             winA, winB, winC, winD
@@ -81,6 +82,7 @@ describe('WindowManager – multi‑monitor behavior', () => {
         g.display.set_current_monitor(0);
 
         windowManager.hideAllWindows();
+        
 
         expect(winA.minimize).toHaveBeenCalled();
         expect(winB.minimize).toHaveBeenCalled();
@@ -104,11 +106,13 @@ describe('WindowManager – multi‑monitor behavior', () => {
     });
 
     it('restoreAllWindows restores only windows hidden on the active monitor', () => {
+        ws0.list_windows = () => [winA, winB, winC, winD];
+
         g.display.set_current_monitor(0);
-        windowManager.hideAllWindows();
+        windowManager.hideAllWindows();   // hides A,B
 
         g.display.set_current_monitor(1);
-        windowManager.hideAllWindows();
+        windowManager.hideAllWindows();   // hides C,D
 
         g.display.set_current_monitor(1);
         windowManager.restoreAllWindows();
@@ -116,9 +120,13 @@ describe('WindowManager – multi‑monitor behavior', () => {
         expect(winC.unminimize).toHaveBeenCalled();
         expect(winD.unminimize).toHaveBeenCalled();
 
+        // winD is last restored → activated
+        expect(winD.activate).toHaveBeenCalled();
+
         expect(winA.unminimize).not.toHaveBeenCalled();
         expect(winB.unminimize).not.toHaveBeenCalled();
     });
+
 
     it('hideFocusedWindow hides only the focused window on the active monitor', () => {
         g.display.set_current_monitor(1);
@@ -136,16 +144,19 @@ describe('WindowManager – multi‑monitor behavior', () => {
     });
 
     it('moving a window between monitors updates hide/restore behavior', () => {
-        g.display.set_current_monitor(0);
-        windowManager.hideAllWindows();
+        ws0.list_windows = () => [winA, winB, winC, winD];
 
-        winA.get_monitor = () => 1;
+        g.display.set_current_monitor(0);
+        windowManager.hideAllWindows();   // hides A,B
+
+        winA.get_monitor = () => 1;       // move A to monitor 1
 
         g.display.set_current_monitor(1);
         windowManager.restoreAllWindows();
 
         expect(winA.unminimize).toHaveBeenCalled();
-        expect(winA.activate).not.toHaveBeenCalled();
+        expect(winA.activate).toHaveBeenCalled();   // last restored window
     });
+
 });
 
