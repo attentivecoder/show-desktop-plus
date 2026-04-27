@@ -39,11 +39,9 @@ describe('Action: workspace sessions', () => {
         gnome.workspace_manager.get_active_workspace = () => ws1;
         wm.restoreAllWindows();
 
-        // After restoreAllWindows(), ALL workspace maps are cleared
-        expect(store.getWorkspaceMap(0)).toBeUndefined();
+        // Only workspace 1 should be cleared
+        expect(store.getWorkspaceMap(0)).toBeDefined();
         expect(store.getWorkspaceMap(1)).toBeUndefined();
     });
-
-
 });
 

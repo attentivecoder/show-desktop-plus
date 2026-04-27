@@ -32,7 +32,7 @@ export default class PanelIndicator {
         this._Main = gnomeUI.Main;
         this._display = gnomeUI.display;        
         this._workspace_manager = gnomeUI.workspace_manager;
-        this._get_window_actors = () => gnomeUI.get_window_actors();
+        this._get_window_actors = gnomeUI.get_window_actors;
         this._get_current_time = gnomeUI.get_current_time;
 
         this._panelButton = null;
@@ -146,21 +146,25 @@ export default class PanelIndicator {
 
                 prefsWin = this._findPrefsWindow();
                 if (!prefsWin)
-                    return;
+                    return; // avoid crash
             }
 
             this._trackPrefsWindow(prefsWin);
 
-            try {
-
+            if (this._prefsOpenedByExtension) {
                 if (prefsWin.get_workspace() !== currentWs)
                     prefsWin.change_workspace(currentWs);
-
-                prefsWin.activate(this._get_current_time());
-            } catch (err) {
-                this._safeOpenPreferences();
             }
 
+           try {
+            prefsWin.activate(this._get_current_time());
+        } catch (err) {
+            if (typeof logError === "function") logError(err);
+            else console.error(err);
+
+            // ⭐ FIX: fallback to opening preferences
+            this._safeOpenPreferences();
+        }
 
         } catch (err) {
             if (typeof logError === "function") logError(err);
@@ -170,8 +174,6 @@ export default class PanelIndicator {
             this._prefsHandling = false;
         }
     }
-
-
 
     _createPanelButton() {
         if (this._panelButton) return;

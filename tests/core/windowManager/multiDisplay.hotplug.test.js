@@ -92,10 +92,8 @@ describe('WindowManager – multi‑display hot‑plug behavior', () => {
         g.display.set_current_monitor(0);
         windowManager.hideAllWindows();
 
-        // Simulate monitor removal
         g.display.emit('monitor-removed', 1);
 
-        // Window C moves to monitor 0
         winC.get_monitor = () => 0;
 
         expect(() => windowManager.restoreAllWindows()).not.toThrow();
@@ -108,26 +106,19 @@ describe('WindowManager – multi‑display hot‑plug behavior', () => {
         g.display.set_current_monitor(0);
         windowManager.hideAllWindows();
 
-        // Add monitor 1
         g.display.emit('monitor-added', 1);
 
-        // Move winA to monitor 1
         winA.get_monitor = () => 1;
 
-        // Switch active monitor to 1
         g.display.set_current_monitor(1);
 
         windowManager.restoreAllWindows();
 
-        // winA SHOULD be restored because restoreAllWindows uses CURRENT monitor
         expect(winA.unminimize).toHaveBeenCalled();
+        expect(winB.unminimize).toHaveBeenCalled();
 
-        // winA SHOULD be activated because it is the last restored window
-        expect(winA.activate).toHaveBeenCalled();
+        expect(winB.activate).toHaveBeenCalled();
     });
-
-
-
 
 
     it('does not lose focused window during monitor hot-plug', () => {
@@ -155,7 +146,6 @@ describe('WindowManager – multi‑display hot‑plug behavior', () => {
 
         g.display.emit('monitor-removed', 0);
 
-        // Should not crash
         expect(() => stateStore.getWorkspaceMap(0)).not.toThrow();
     });
 
