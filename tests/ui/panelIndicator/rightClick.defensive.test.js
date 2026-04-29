@@ -11,46 +11,46 @@ describe('PanelIndicator – right-click defensive behavior', () => {
     }
 
     beforeEach(() => {
-    gnome = createMockGnomeAPI([]);
+        gnome = createMockGnomeAPI([]);
 
-    gnome.GLib.idle_add = vi.fn((prio, cb) => {
-        cb();
-        return 1;
+        gnome.GLib.idle_add = vi.fn((prio, cb) => {
+            cb();
+            return 1;
+        });
+
+        gnome.GLib.timeout_add = vi.fn((prio, ms, cb) => {
+            cb();
+            return 1;
+        });
+
+        ws = { index: () => 0 };
+
+        gnome.workspace_manager._active = 0;
+        gnome.workspace_manager.get_workspace_by_index = () => ws;
+        gnome.workspace_manager.get_active_workspace = () => ws;
+        gnome.workspace_manager.n_workspaces = 1;
+
+        mockExtension = {
+            _extensionName: 'show-desktop-plus',
+            metadata: { name: 'show-desktop-plus' },
+            _settings: { get_enum: () => 0 },
+            openPreferences: vi.fn(),
+        };
+
+        indicator = new PanelIndicator(
+            {
+                toggleDesktop: vi.fn(),
+                hideAllWindows: vi.fn(),
+                restoreAllWindows: vi.fn(),
+                addCurrentWindowToHidden: vi.fn(),
+            },
+            { getHiddenCountForWorkspace: () => 0 },
+            mockExtension,
+            gnome
+        );
+
+        indicator._createPanelButton();
     });
-
-    gnome.GLib.timeout_add = vi.fn((prio, ms, cb) => {
-        cb();
-        return 1;
-    });
-
-    ws = { index: () => 0 };
-
-    gnome.workspace_manager._active = 0;
-    gnome.workspace_manager.get_workspace_by_index = () => ws;
-    gnome.workspace_manager.get_active_workspace = () => ws;
-    gnome.workspace_manager.n_workspaces = 1;
-
-    mockExtension = {
-        _extensionName: 'show-desktop-plus',
-        metadata: { name: 'show-desktop-plus' },
-        _settings: { get_enum: () => 0 },
-        openPreferences: vi.fn(),
-    };
-
-    indicator = new PanelIndicator(
-        {
-            toggleDesktop: vi.fn(),
-            hideAllWindows: vi.fn(),
-            restoreAllWindows: vi.fn(),
-            addCurrentWindowToHidden: vi.fn(),
-        },
-        { getHiddenCountForWorkspace: () => 0 },
-        mockExtension,
-        gnome
-    );
-
-    indicator._createPanelButton();
-});
 
 
     function withWindow(win) {
@@ -101,7 +101,7 @@ describe('PanelIndicator – right-click defensive behavior', () => {
         expect(mockExtension.openPreferences).toHaveBeenCalled();
     });
     
-   it('falls back to openPreferences() if activate throws in second activation path', () => {
+    it('falls back to openPreferences() if activate throws in second activation path', () => {
         const prefsWin = withWindow({
             get_title: () => 'show-desktop-plus Preferences',
             get_wm_class: () => 'org.gnome.Shell.Extensions',
