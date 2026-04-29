@@ -100,5 +100,25 @@ describe('PanelIndicator – right-click defensive behavior', () => {
 
         expect(mockExtension.openPreferences).toHaveBeenCalled();
     });
+    
+   it('falls back to openPreferences() if activate throws in second activation path', () => {
+        const prefsWin = withWindow({
+            get_title: () => 'show-desktop-plus Preferences',
+            get_wm_class: () => 'org.gnome.Shell.Extensions',
+            activate: () => { throw new Error('boom'); },
+            get_workspace: () => ws,
+            change_workspace: vi.fn(),
+        });
+
+
+        indicator._get_window_actors = vi
+            .fn()
+            .mockReturnValueOnce([]) 
+            .mockReturnValueOnce([{ meta_window: prefsWin }]);
+
+        simulateRightClick();
+
+        expect(mockExtension.openPreferences).toHaveBeenCalledTimes(2);
+    });
 });
 

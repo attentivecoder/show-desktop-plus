@@ -1,5 +1,16 @@
 import Gio from 'gi://Gio';
 
+/**
+ * Binds a Gtk.DropDown (ComboRow) to a GSettings enum key.
+ *
+ * This binding is *manual* because Gtk.DropDown does not support
+ * Gio.Settings.bind() directly for enum values.
+ *
+ * The pattern:
+ *   - updateFromSettings(): sync widget when settings change
+ *   - updateFromWidget(): sync settings when widget changes
+ *   - `updating` flag prevents infinite loops
+ */
 export function bindComboRow(settings, key, row) {
     let updating = false;
 
@@ -17,7 +28,7 @@ export function bindComboRow(settings, key, row) {
         updating = false;
     }
 
-    // Initial sync
+    // Initial sync from settings → widget
     updateFromSettings();
 
     // Widget → Settings
@@ -27,6 +38,11 @@ export function bindComboRow(settings, key, row) {
     settings.connect(`changed::${key}`, updateFromSettings);
 }
 
+/**
+ * Binds a Gtk.Switch (SwitchRow) to a boolean GSettings key.
+ *
+ * Gtk.Switch supports Gio.Settings.bind() natively, so this is simple.
+ */
 export function bindSwitchRow(settings, key, row) {
     settings.bind(
         key,
@@ -35,3 +51,4 @@ export function bindSwitchRow(settings, key, row) {
         Gio.SettingsBindFlags.DEFAULT
     );
 }
+
