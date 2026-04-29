@@ -224,14 +224,14 @@ This project uses Git tags to trigger automated releases via GitHub Actions.
 ### Create a release tag
 
 ```bash
-git tag v0.1
-git push origin v0.1
+git tag -s v1.0 -m "Release v1.0"
+git push origin v1.0
 ```
 
 ### Delete a tag
 
 ```bash
-git tag -d v0.1
+git tag -d v1.0
 git push origin :refs/tags/v0.1
 ```
 
